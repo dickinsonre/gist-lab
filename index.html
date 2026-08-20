@@ -336,6 +336,24 @@ kbd {
 .theme-item .theme-check { margin-left: auto; color: var(--accent); font-weight: 600; opacity: 0; }
 .theme-item.on .theme-check { opacity: 1; }
 
+/* Netlify apps section */
+.apps-section { margin-top: 52px; }
+.section-title {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700; letter-spacing: -0.01em;
+  margin: 0 0 6px; color: var(--text);
+}
+.section-sub {
+  font-family: var(--font-ui); font-size: 15px; font-weight: 400;
+  color: var(--muted); letter-spacing: 0;
+}
+.apps-head-note { margin: 0 0 18px; color: var(--muted); font-size: 13.5px; }
+.apps-head-note code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--accent-soft); color: var(--accent);
+  padding: 1px 6px; border-radius: 5px;
+}
+
 /* ==========================================================================
    Stats line
    ========================================================================== */
@@ -588,6 +606,7 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -672,9 +691,18 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
   <!-- ======================= Gallery ======================= -->
   <main class="grid" id="grid" aria-live="polite"></main>
 
+  <!-- ======================= Netlify apps ======================= -->
+  <section class="apps-section" id="appsSection" aria-label="Hosted Netlify apps">
+    <h2 class="section-title">Hosted apps <span class="section-sub">— Netlify</span></h2>
+    <p class="apps-head-note">Longer-form tools deployed on Netlify. Not gists — but they open right here too,
+      loaded straight from <code>*.netlify.app</code>.</p>
+    <div class="grid" id="appsGrid"></div>
+  </section>
+
   <!-- ======================= Footer ======================= -->
   <footer class="site-footer">
-    Data fetched live from the GitHub REST API · Gists render client-side in sandboxed iframes · Built for
+    Data fetched live from the GitHub REST API · Gists render client-side in sandboxed iframes · Hosted apps stream
+    from Netlify · Built for
     <a href="https://gist.github.com/dickinsonre" target="_blank" rel="noopener">gist.github.com/dickinsonre</a>
   </footer>
 </div>
@@ -780,6 +808,37 @@ var HLJS_LANG = {
   TypeScript: 'typescript', CSS: 'css', Python: 'python', JSON: 'json',
   Shell: 'bash', Text: 'plaintext', 'Jupyter Notebook': 'json'
 };
+
+/* ---------- Hosted Netlify apps (static list — not gists, but open in-page too) ---------- */
+var NETLIFY_DOT = '#00ad9f';   // Netlify teal for the slug chip dot
+var APPS = [
+  { slug: 'autodesk-drainage-decider-english',     title: 'Which Autodesk Drainage Tool? — InfoDrainage vs Civil 3D vs SSA' },
+  { slug: 'vonnegut-grades-me',                    title: 'The Vonnegut Pass — seven rules over your non-fiction' },
+  { slug: 'its-intensity-not-inches-elango',       title: "It's the Intensity, Not the Inches — an interactive companion" },
+  { slug: 'swmmbench-factorial-jaa',               title: 'swmmbench — Factorial & Hardening Console' },
+  { slug: 'inside-swmm6-gui',                      title: 'Inside the SWMM 6 GUI — openswmm.gui @ swmm6_gui' },
+  { slug: 'openswmm-finite-volume',                title: 'How OpenSWMM Solves Finite Volume — read off the develop branch' },
+  { slug: 'how-to-add-swmm6-options-to-swmm5-inp', title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader' },
+  { slug: 'flood-audit-3d-flood-modeling',         title: 'Flood Pipeline Audit Bench — Muhammad7006/3D-flood-modeling' },
+  { slug: 'swmm-gap-analysis',                     title: 'SWMM Gap Analysis — Rebuilt from First Principles (2026→2030 Horizon)' },
+  { slug: 'icm-swmm-inference',                    title: 'ICM SWMM Inference — Export & Analyse' },
+  { slug: 'ifd-prompt-library',                    title: '250 Prompts for the InfoDrainage Assistant' },
+  { slug: 'iddx-swmm5-converter',                  title: 'InfoDrainage IDDX Explorer v2' },
+  { slug: 'hydra-explorer-swmm-epanet',            title: 'Hydra Explorer — a Rust rewrite of EPANET and SWMM, read from the source' },
+  { slug: 'swmm-jumps-ai-jumps',                   title: 'The Jump Map — Jumps, Ladders, and a Human–AI Division of Labor for SWMM5, SWMM5+ & SWMM6' },
+  { slug: 'swmm5-swmm6-code-diff',                 title: 'SWMM5 ⇄ SWMM6 Source Diff Explorer' },
+  { slug: 'stochastic-hydrology-studio',           title: 'Stochastic Hydrology Studio' },
+  { slug: 'swmm5-swmm6-solver-anotomy',            title: 'SWMM5 Solver Anatomy — the dynamic-wave step, made visible' },
+  { slug: 'swmm5-swmm6-svs',                       title: 'SWMM5 .OUT Singular-Value Spectrum' },
+  { slug: 'five-ai-layers-swmm',                   title: 'SWMM AI Engineering Roadmap' },
+  { slug: 'swmm-refinement-manifold',              title: 'SWMM Refinement Manifold — SWMM5 ↔ SWMM6 Benchmark Explorer' },
+  { slug: 'four-engine-comparison',                title: 'Four-Engine Pipe Comparator — HEC-RAS Pipes · InfoWorks ICM · SWMM5 · SWMM6' },
+  { slug: 'swmm-enablement-gists',                 title: 'Gist Shelf — SWMM5 & SWMM6 Enablement' },
+  { slug: 'one-water-backbone-sewntr',             title: 'One Backbone — SWMM, EPANET and WNTR on a shared SQL layer' },
+  { slug: 'swmm5-conduit-lengthening-advisor',     title: 'SWMM5 Lengthening Advisor — What LENGTHENING_STEP Really Does' },
+  { slug: 'pangea-rainfall-explorer',              title: 'Pangea Rainfall Explorer' }
+];
+APPS.forEach(function (a) { a.url = 'https://' + a.slug + '.netlify.app'; });
 
 /* ---------- Tiny DOM helper ---------- */
 function $(id) { return document.getElementById(id); }
@@ -1000,6 +1059,7 @@ function renderStats() {
   var parts = [
     gists.length + ' gists',
     runnable + ' runnable',
+    APPS.length + ' hosted apps',
     'fetched ' + (lastFetched ? relativeTime(lastFetched) : 'never')
   ];
   $('statsText').textContent = parts.join('  ·  ');
@@ -1142,6 +1202,63 @@ function renderErrorState(message) {
 }
 
 /* ==========================================================================
+   Netlify apps — static cards that open in the same run-modal shell
+   ========================================================================== */
+function renderApps() {
+  var grid = $('appsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  var q = searchQuery.trim().toLowerCase();
+  var list = APPS.filter(function (a) {
+    return !q || (a.title + ' ' + a.slug).toLowerCase().indexOf(q) !== -1;
+  });
+
+  if (!list.length) {
+    var empty = el('div', 'state-box');
+    empty.style.gridColumn = '1 / -1';
+    empty.appendChild(el('h2', null, 'No apps match'));
+    empty.appendChild(el('p', null, 'Try a different search term.'));
+    grid.appendChild(empty);
+    return;
+  }
+
+  list.forEach(function (a, i) {
+    var card = el('article', 'card');
+    card.style.setProperty('--d', Math.min(i, 24) * 30 + 'ms');
+
+    var title = el('h3', 'card-title', a.title);
+    title.title = a.title;
+    card.appendChild(title);
+
+    var meta = el('div', 'card-meta');
+    meta.appendChild(el('span', null, 'hosted app'));
+    meta.appendChild(el('span', 'runnable-tag', '▶ opens here'));
+    card.appendChild(meta);
+
+    var files = el('div', 'card-files');
+    var chipEl = el('span', 'file-chip');
+    chipEl.title = a.url;
+    var dot = el('span', 'dot'); dot.style.background = NETLIFY_DOT;
+    chipEl.appendChild(dot);
+    chipEl.appendChild(el('span', 'fname', a.slug + '.netlify.app'));
+    files.appendChild(chipEl);
+    card.appendChild(files);
+
+    var actions = el('div', 'card-actions');
+    var open = el('button', 'btn btn-primary', '▶ Open');
+    open.type = 'button';
+    open.addEventListener('click', function () { openAppModal(a); });
+    actions.appendChild(open);
+    var visit = el('a', 'btn btn-ghost', '↗ Visit');
+    visit.href = a.url; visit.target = '_blank'; visit.rel = 'noopener';
+    actions.appendChild(visit);
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
+}
+
+/* ==========================================================================
    Modal plumbing (shared behavior for Run + Code shells)
    ========================================================================== */
 function showOverlay(id) {
@@ -1155,17 +1272,19 @@ function hideOverlay(id) {
   }
 }
 function setHashForModal(type, id) {
-  var target = '#gist/' + id + (type === 'code' ? '/code' : '');
+  var target = (type === 'app')
+    ? '#app/' + id
+    : '#gist/' + id + (type === 'code' ? '/code' : '');
   if (location.hash !== target) location.hash = target;   // fires hashchange; handler no-ops
 }
 function clearHash() {
-  if (/^#gist\//.test(location.hash)) {
+  if (/^#(gist|app)\//.test(location.hash)) {
     history.pushState(null, '', location.pathname + location.search); // no hashchange event
   }
 }
 function closeActiveModal(fromHash) {
   if (!activeModal) return;
-  if (activeModal.type === 'run') {
+  if (activeModal.type === 'run' || activeModal.type === 'app') {
     hideOverlay('runOverlay');
     if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
     var f = $('runFrame'); f.src = 'about:blank'; f.hidden = true;
@@ -1226,6 +1345,7 @@ function openRunModal(gist, opts) {
   $('runTitle').textContent = gistTitle(gist);
   $('runTitle').title = gistTitle(gist);
   $('runGhLink').href = gist.html_url;
+  $('runGhLink').textContent = 'Open on GitHub ↗';
 
   var picker = $('runFilePicker');
   picker.innerHTML = '';
@@ -1270,6 +1390,36 @@ function loadRunFile(gist, file) {
     $('runErrorText').textContent = 'Could not load ' + file.filename + ': ' + err.message;
     $('runRetry').onclick = function () { loadRunFile(gist, file); };
   });
+}
+
+/* Hosted Netlify app — loads directly by URL into the same run-modal shell.
+   Cross-origin embedding errors are not detectable from JS, so the notice bar
+   always offers the "Open on Netlify" escape hatch. */
+function openAppModal(app, opts) {
+  opts = opts || {};
+  closeActiveModal(true);
+  activeModal = { type: 'app', id: app.slug, app: app };
+
+  $('runTitle').textContent = app.title;
+  $('runTitle').title = app.title;
+  $('runGhLink').href = app.url;
+  $('runGhLink').textContent = 'Open on Netlify ↗';
+  $('runFilePicker').hidden = true;
+
+  $('runLoading').hidden = true;
+  $('runError').hidden = true;
+  $('stubNotice').textContent =
+    'Hosted on Netlify — loading ' + app.slug + '.netlify.app in a sandboxed frame. ' +
+    'If it stays blank, use “Open on Netlify ↗” (some apps block embedding).';
+  $('stubNotice').hidden = false;
+
+  var frame = $('runFrame');
+  if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+  frame.src = app.url;
+  frame.hidden = false;
+
+  showOverlay('runOverlay');
+  if (!opts.fromHash) setHashForModal('app', app.slug);
 }
 
 /* ==========================================================================
@@ -1394,13 +1544,23 @@ function copyCurrentCode() {
    Deep links — #gist/<id> (run) and #gist/<id>/code (code viewer)
    ========================================================================== */
 function parseHash() {
-  var m = /^#gist\/([0-9a-f]+)(\/code)?\/?$/i.exec(location.hash || '');
-  return m ? { id: m[1], code: !!m[2] } : null;
+  var g = /^#gist\/([0-9a-f]+)(\/code)?\/?$/i.exec(location.hash || '');
+  if (g) return { id: g[1], code: !!g[2] };
+  var a = /^#app\/([a-z0-9-]+)\/?$/i.exec(location.hash || '');
+  if (a) return { app: a[1] };
+  return null;
 }
 function routeFromHash() {
   var h = parseHash();
   if (!h) {
     if (activeModal) closeActiveModal(true);
+    return;
+  }
+  if (h.app) {
+    if (activeModal && activeModal.type === 'app' && activeModal.id === h.app) return;
+    var a = null;
+    for (var i = 0; i < APPS.length; i++) if (APPS[i].slug === h.app) { a = APPS[i]; break; }
+    if (a) openAppModal(a, { fromHash: true });
     return;
   }
   var already = activeModal && activeModal.id === h.id &&
@@ -1507,6 +1667,7 @@ function bindUI() {
   $('searchInput').addEventListener('input', function (e) {
     searchQuery = e.target.value;
     renderGrid();
+    renderApps();
   });
   document.addEventListener('keydown', function (e) {
     var tag = (document.activeElement && document.activeElement.tagName) || '';
@@ -1579,6 +1740,7 @@ function bindUI() {
 /* Boot */
 buildThemeMenu();
 applyTheme(currentTheme(), false);
+renderApps();
 bindUI();
 refreshTokenUI();
 loadGists(false);
