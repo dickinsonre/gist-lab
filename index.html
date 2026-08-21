@@ -354,6 +354,49 @@ kbd {
   padding: 1px 6px; border-radius: 5px;
 }
 
+/* Jump navigation (gists ↔ hosted apps) */
+.apps-section { scroll-margin-top: 20px; }
+.stat-jump {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-ring);
+  cursor: pointer;
+  padding-bottom: 1px;
+}
+.stat-jump:hover { color: var(--accent-hover); border-bottom-style: solid; }
+.section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.jump-top {
+  font: 500 12.5px var(--font-mono);
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.jump-top:hover { color: var(--accent); }
+.jump-fab {
+  position: fixed;
+  right: 22px; bottom: 22px;
+  z-index: 45; /* below the modal overlay (50) */
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: 600 13px var(--font-ui);
+  cursor: pointer;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease, border-color .15s, color .15s;
+}
+.jump-fab.show { opacity: 1; transform: none; pointer-events: auto; }
+.jump-fab:hover { border-color: var(--accent-ring); color: var(--accent); }
+.jump-fab .fab-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ad9f; flex: 0 0 auto; }
+
 /* ==========================================================================
    Stats line
    ========================================================================== */
@@ -606,7 +649,6 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -660,6 +702,7 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
         <option value="name">Name A–Z</option>
       </select>
       <button class="btn btn-ghost" id="refreshBtn" title="Bypass the 10-minute cache and re-fetch">↻ Refresh</button>
+      <button class="btn btn-ghost" id="jumpAppsBtn" title="Skip down to your hosted Netlify apps">Hosted apps ↓</button>
       <div class="settings-wrap">
         <button class="btn btn-icon" id="settingsBtn" title="Settings (GitHub token)" aria-label="Settings" aria-haspopup="true">⚙</button>
         <!-- Settings popover -->
@@ -693,11 +736,19 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
 
   <!-- ======================= Netlify apps ======================= -->
   <section class="apps-section" id="appsSection" aria-label="Hosted Netlify apps">
-    <h2 class="section-title">Hosted apps <span class="section-sub">— Netlify</span></h2>
+    <div class="section-head">
+      <h2 class="section-title">Hosted apps <span class="section-sub">— Netlify</span></h2>
+      <a href="#top" class="jump-top" id="jumpTopLink">↑ back to gists</a>
+    </div>
     <p class="apps-head-note">Longer-form tools deployed on Netlify. Not gists — but they open right here too,
       loaded straight from <code>*.netlify.app</code>.</p>
     <div class="grid" id="appsGrid"></div>
   </section>
+
+  <!-- Floating jump pill (appears after scrolling; flips direction at the apps section) -->
+  <button class="jump-fab" id="jumpFab" aria-label="Jump to hosted apps">
+    <span class="fab-dot"></span><span id="jumpFabLabel">Hosted apps ↓</span>
+  </button>
 
   <!-- ======================= Footer ======================= -->
   <footer class="site-footer">
@@ -1054,15 +1105,55 @@ function writeCache(data) {
 /* ==========================================================================
    Rendering — stats, chips, grid, skeletons, states
    ========================================================================== */
+/* ==========================================================================
+   Jump navigation — toolbar button, stat link, floating pill
+   ========================================================================== */
+function jumpToApps() {
+  var s = $('appsSection');
+  if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function jumpToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+var jumpFabTicking = false;
+function updateJumpFab() {
+  var fab = $('jumpFab');
+  if (!fab) return;
+  var sec = $('appsSection');
+  var y = window.scrollY || document.documentElement.scrollTop || 0;
+  var secTop = sec ? sec.getBoundingClientRect().top + y : Infinity;
+  var inApps = y >= secTop - window.innerHeight * 0.6;
+  fab.classList.toggle('show', y > 350);
+  fab.dataset.mode = inApps ? 'top' : 'apps';
+  $('jumpFabLabel').textContent = inApps ? 'Back to gists ↑' : 'Hosted apps ↓';
+}
+function onJumpFabScroll() {
+  if (jumpFabTicking) return;
+  jumpFabTicking = true;
+  requestAnimationFrame(function () {
+    updateJumpFab();
+    jumpFabTicking = false;
+  });
+}
+
 function renderStats() {
   var runnable = gists.filter(isRunnable).length;
-  var parts = [
-    gists.length + ' gists',
-    runnable + ' runnable',
-    APPS.length + ' hosted apps',
-    'fetched ' + (lastFetched ? relativeTime(lastFetched) : 'never')
-  ];
-  $('statsText').textContent = parts.join('  ·  ');
+  var el = $('statsText');
+  el.textContent = '';
+  el.appendChild(document.createTextNode(
+    gists.length + ' gists  ·  ' + runnable + ' runnable  ·  '));
+  var jump = document.createElement('a');
+  jump.className = 'stat-jump';
+  jump.href = '#appsSection';
+  jump.textContent = APPS.length + ' hosted apps ↓';
+  jump.title = 'Jump down to the hosted Netlify apps';
+  jump.addEventListener('click', function (e) {
+    e.preventDefault();
+    jumpToApps();
+  });
+  el.appendChild(jump);
+  el.appendChild(document.createTextNode(
+    '  ·  fetched ' + (lastFetched ? relativeTime(lastFetched) : 'never')));
   $('gistCount').textContent = gists.length;
   $('cachedBadge').hidden = !servedFromCache;
 }
@@ -1688,6 +1779,19 @@ function bindUI() {
     renderGrid();
   });
   $('refreshBtn').addEventListener('click', function () { loadGists(true); });
+
+  /* Jump navigation — gists ↔ hosted apps */
+  $('jumpAppsBtn').addEventListener('click', jumpToApps);
+  $('jumpTopLink').addEventListener('click', function (e) {
+    e.preventDefault();
+    jumpToTop();
+  });
+  $('jumpFab').addEventListener('click', function () {
+    if ($('jumpFab').dataset.mode === 'top') jumpToTop();
+    else jumpToApps();
+  });
+  window.addEventListener('scroll', onJumpFabScroll, { passive: true });
+  updateJumpFab();
 
   /* Settings popover */
   $('settingsBtn').addEventListener('click', function (e) {
