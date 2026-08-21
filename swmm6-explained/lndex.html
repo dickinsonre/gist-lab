@@ -1,1 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gist Lab — every public gist by dickinsonre</title>
+<meta name="description" content="A live gallery of dickinsonre's public GitHub gists — interactive SWMM/EPANET/ICM water-modeling demos that run right in the page.">
 
+<!--
+  Gist Lab — single-file, dependency-free (vanilla HTML/CSS/JS).
+  Only external resources: Google Fonts + highlight.js CDN (with graceful fallback).
+  Data is always fetched live from the GitHub REST API (client-side), cached in
+  localStorage for 10 minutes, and runnable gists execute in sandboxed iframes
+  via Blob URLs.
+-->
+
+<!-- Set theme ASAP to avoid a flash of the wrong theme -->
+<script>
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('gistlab:theme'); } catch (e) {}
+  if (!/^(light|dark|gators|auburn|oregon|autodesk)$/.test(t || '')) {
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+
+<!-- Google Fonts: Fraunces (display), Inter (UI), JetBrains Mono (code/stats) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- highlight.js themes (light/dark); the app tolerates these failing to load -->
+<link rel="stylesheet" id="hljsLight" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" id="hljsDark" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
+
+<style>
+/* ==========================================================================
+   Design tokens — warm, low-saturation editorial palette (no gradients!)
+   ========================================================================== */
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --border: #e7e2da;
+  --text: #292524;
+  --muted: #78716c;
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-soft: rgba(194, 65, 12, 0.08);
+  --accent-ring: rgba(194, 65, 12, 0.35);
+  --accent-2: var(--accent);  /* secondary brand color (defaults to accent) */
+  --skel: #efeae3;            /* skeleton block color */
+  --overlay: rgba(28, 25, 23, 0.55);
+  --shadow: 0 1px 2px rgba(28, 25, 23, .05), 0 4px 16px rgba(28, 25, 23, .05);
+  --shadow-lift: 0 2px 4px rgba(28, 25, 23, .06), 0 10px 28px rgba(28, 25, 23, .09);
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+html[data-theme="dark"] {
+  --bg: #1c1917;
+  --surface: #292524;
+  --border: #44403c;
+  --text: #f5f4f2;
+  --muted: #a8a29e;
+  --accent-soft: rgba(194, 65, 12, 0.16);
+  --skel: #37312d;
+  --overlay: rgba(12, 10, 9, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .25), 0 4px 16px rgba(0, 0, 0, .25);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .3), 0 10px 28px rgba(0, 0, 0, .35);
+}
+
+/* Florida Gators — orange #FA4616 on cool white, royal-blue #0021A5 ink */
+html[data-theme="gators"] {
+  --bg: #f4f6fd;
+  --surface: #ffffff;
+  --border: #d9e0f2;
+  --text: #14245c;
+  --muted: #5b6685;
+  --accent: #fa4616;
+  --accent-hover: #c7360d;
+  --accent-2: #0021a5;
+  --accent-soft: rgba(250, 70, 22, 0.09);
+  --accent-ring: rgba(250, 70, 22, 0.35);
+  --skel: #e6eaf6;
+  --overlay: rgba(16, 24, 60, 0.5);
+  --shadow: 0 1px 2px rgba(0, 33, 165, .05), 0 4px 16px rgba(0, 33, 165, .06);
+  --shadow-lift: 0 2px 4px rgba(0, 33, 165, .07), 0 10px 28px rgba(0, 33, 165, .10);
+}
+
+/* Auburn — navy #03244D night with burnt orange #DD550C (brightened for contrast) */
+html[data-theme="auburn"] {
+  --bg: #071528;
+  --surface: #0e2342;
+  --border: #26446e;
+  --text: #edf2fa;
+  --muted: #93a7c4;
+  --accent: #e86a1a;
+  --accent-hover: #ff8638;
+  --accent-2: #7ea6e0;
+  --accent-soft: rgba(232, 106, 26, 0.16);
+  --accent-ring: rgba(232, 106, 26, 0.45);
+  --skel: #162c50;
+  --overlay: rgba(2, 8, 18, 0.65);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 4px 16px rgba(0, 0, 0, .30);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .35), 0 10px 28px rgba(0, 0, 0, .40);
+}
+
+/* Oregon State — black & beaver orange #D73F09 (brightened for contrast) */
+html[data-theme="oregon"] {
+  --bg: #100f0e;
+  --surface: #1d1b18;
+  --border: #3d3831;
+  --text: #f6f4ef;
+  --muted: #a9a198;
+  --accent: #e34d15;
+  --accent-hover: #ff6a33;
+  --accent-soft: rgba(227, 77, 21, 0.17);
+  --accent-ring: rgba(227, 77, 21, 0.45);
+  --skel: #2b2723;
+  --overlay: rgba(5, 4, 3, 0.68);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 4px 16px rgba(0, 0, 0, .32);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .35), 0 10px 28px rgba(0, 0, 0, .42);
+}
+
+/* Autodesk — dark product-UI slate with brand blue #0696D7 */
+html[data-theme="autodesk"] {
+  --bg: #1e2329;
+  --surface: #2a313a;
+  --border: #46505c;
+  --text: #ecf1f5;
+  --muted: #9da9b4;
+  --accent: #1499d6;
+  --accent-hover: #43b5e8;
+  --accent-soft: rgba(20, 153, 214, 0.16);
+  --accent-ring: rgba(20, 153, 214, 0.42);
+  --skel: #343d47;
+  --overlay: rgba(9, 12, 15, 0.62);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .28), 0 4px 16px rgba(0, 0, 0, .28);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .32), 0 10px 28px rgba(0, 0, 0, .38);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: light; }
+html[data-theme="dark"],
+html[data-theme="auburn"],
+html[data-theme="oregon"],
+html[data-theme="autodesk"] { color-scheme: dark; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body.locked { overflow: hidden; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* ==========================================================================
+   Buttons & inputs
+   ========================================================================== */
+.btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: 500 14px/1 var(--font-ui);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+.btn:hover { text-decoration: none; }
+.btn:active { transform: translateY(1px); }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); color: #fff; }
+
+.btn-ghost { border-color: var(--border); color: var(--text); background: var(--surface); }
+.btn-ghost:hover { border-color: var(--accent-ring); color: var(--accent); }
+
+.btn-icon {
+  width: 40px; min-width: 40px; padding: 0;
+  border-color: var(--border); background: var(--surface);
+  font-size: 17px;
+}
+.btn-icon:hover { border-color: var(--accent-ring); color: var(--accent); }
+
+.btn-sm { min-height: 34px; padding: 0 12px; font-size: 13px; border-radius: 8px; }
+
+input[type="text"], input[type="password"], select {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: 400 14px var(--font-ui);
+  padding: 0 12px;
+}
+input::placeholder { color: var(--muted); }
+input:focus, select:focus { border-color: var(--accent-ring); outline: 2px solid var(--accent-ring); outline-offset: 0; }
+
+kbd {
+  font: 500 11px var(--font-mono);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: var(--bg);
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.site-header { padding: 52px 0 8px; }
+.header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.site-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 5vw, 46px);
+  line-height: 1.05;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+.site-title .dot { color: var(--accent-2); }
+.site-subtitle { margin: 0; color: var(--muted); font-size: 15.5px; max-width: 660px; }
+.site-subtitle strong { color: var(--text); font-weight: 600; }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 6px; }
+
+/* ==========================================================================
+   Rate-limit banner
+   ========================================================================== */
+.rate-banner {
+  margin-top: 22px;
+  padding: 13px 16px;
+  border: 1px solid var(--accent-ring);
+  background: var(--accent-soft);
+  border-radius: 12px;
+  font-size: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.rate-banner strong { color: var(--accent); }
+
+/* ==========================================================================
+   Toolbar (search / chips / sort / refresh / settings)
+   ========================================================================== */
+.toolbar { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
+.toolbar-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1 1 240px; min-width: 200px; }
+.search-wrap input { width: 100%; padding-right: 44px; }
+.search-wrap kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip {
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font: 500 13px var(--font-ui);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.chip:hover { border-color: var(--accent-ring); color: var(--text); }
+.chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chip .count { font: 500 11px var(--font-mono); opacity: .75; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+.settings-wrap { position: relative; }
+.popover {
+  position: absolute;
+  right: 0; top: 48px;
+  width: min(320px, calc(100vw - 48px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lift);
+  padding: 16px;
+  z-index: 40;
+}
+.popover h3 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.popover p { margin: 0 0 12px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.popover input { width: 100%; font-family: var(--font-mono); font-size: 13px; }
+.popover .popover-row { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.popover .token-state { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+/* Theme picker */
+#themeSwatch {
+  width: 15px; height: 15px; border-radius: 5px; display: inline-block;
+  background: var(--accent); border: 1px solid var(--border); vertical-align: -2px;
+}
+.theme-menu { width: min(280px, calc(100vw - 48px)); padding: 12px 12px 10px; }
+.theme-list { display: flex; flex-direction: column; gap: 2px; }
+.theme-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 40px; padding: 8px 10px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 13.5px; cursor: pointer; text-align: left;
+}
+.theme-item:hover { background: var(--accent-soft); }
+.theme-item.on { border-color: var(--accent-ring); background: var(--accent-soft); }
+.theme-chip { display: inline-flex; gap: 3px; flex: 0 0 auto; }
+.theme-chip span { width: 14px; height: 14px; border-radius: 5px; border: 1px solid var(--border); display: inline-block; }
+.theme-item .theme-check { margin-left: auto; color: var(--accent); font-weight: 600; opacity: 0; }
+.theme-item.on .theme-check { opacity: 1; }
+
+/* Netlify apps section */
+.apps-section { margin-top: 52px; }
+.section-title {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700; letter-spacing: -0.01em;
+  margin: 0 0 6px; color: var(--text);
+}
+.section-sub {
+  font-family: var(--font-ui); font-size: 15px; font-weight: 400;
+  color: var(--muted); letter-spacing: 0;
+}
+.apps-head-note { margin: 0 0 18px; color: var(--muted); font-size: 13.5px; }
+.apps-head-note code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--accent-soft); color: var(--accent);
+  padding: 1px 6px; border-radius: 5px;
+}
+
+/* ==========================================================================
+   Stats line
+   ========================================================================== */
+.stats-line {
+  margin: 18px 0 22px;
+  font: 400 12.5px var(--font-mono);
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stats-line .sep { opacity: .5; }
+.badge-cached {
+  font: 500 10.5px var(--font-mono);
+  color: var(--accent);
+  border: 1px solid var(--accent-ring);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+#fetchWarning { color: var(--accent); }
+
+/* ==========================================================================
+   Card grid
+   ========================================================================== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 18px;
+  padding-bottom: 12px;
+}
+@media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  animation: cardIn .45s cubic-bezier(.2, .7, .3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.card:hover { transform: translateY(-3px); border-color: var(--accent-ring); box-shadow: var(--shadow-lift); }
+@keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+.card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7em;
+  word-break: break-word;
+}
+.card-meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card-meta .runnable-tag { color: var(--accent-2); font-weight: 500; }
+
+.card-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font: 400 11.5px var(--font-mono);
+  color: var(--muted);
+  background: var(--bg);
+}
+.file-chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.file-chip .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; color: var(--text); }
+.file-chip .fsize { opacity: .75; }
+
+.card-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+.card-actions .btn { flex: 0 0 auto; }
+
+/* Skeleton loaders (pulsing blocks — no gradient shimmer, per palette rules) */
+.skel-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  display: flex; flex-direction: column; gap: 13px;
+}
+.skel { background: var(--skel); border-radius: 8px; animation: pulse 1.4s ease-in-out infinite; }
+.skel-title { height: 20px; width: 82%; }
+.skel-title2 { height: 20px; width: 55%; }
+.skel-meta { height: 13px; width: 40%; }
+.skel-chips { height: 26px; width: 75%; }
+.skel-btns { height: 40px; width: 60%; margin-top: auto; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* Empty / error states */
+.state-box {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+}
+.state-box h2 { margin: 0 0 8px; font: 600 19px var(--font-ui); color: var(--text); }
+.state-box p { margin: 0 auto 18px; max-width: 460px; font-size: 14px; }
+
+/* ==========================================================================
+   Modals (shared shell: overlay + sheet + 56px toolbar + body)
+   ========================================================================== */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.sheet {
+  position: absolute; inset: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(28, 25, 23, .3);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  animation: sheetIn .22s cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes sheetIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .sheet { inset: 0; border-radius: 0; border: 0; } }
+
+.sheet-toolbar {
+  flex: 0 0 56px;
+  height: 56px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px 0 20px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.sheet-title {
+  font: 600 14.5px var(--font-ui);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; flex: 0 1 auto;
+}
+.toolbar-spacer { flex: 1 1 auto; }
+.sheet-toolbar select { height: 34px; font-size: 13px; max-width: 220px; border-radius: 8px; }
+.toolbar-link { font-size: 13px; font-weight: 500; white-space: nowrap; }
+.toolbar-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; color: var(--muted);
+  font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+}
+.toolbar-btn:hover { background: var(--accent-soft); color: var(--accent); }
+@media (max-width: 560px) { .toolbar-link span.long { display: none; } }
+
+.stub-notice {
+  padding: 9px 20px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--accent-ring);
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.sheet-body { flex: 1; position: relative; display: flex; flex-direction: column; min-height: 0; }
+.run-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+
+.modal-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; color: var(--muted); font-size: 14px; text-align: center; padding: 24px;
+}
+.spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Code viewer
+   ========================================================================== */
+.tabs {
+  flex: 0 0 auto;
+  display: flex; gap: 2px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  align-items: center;
+}
+.tab {
+  border: 0; background: transparent; cursor: pointer;
+  font: 500 12.5px var(--font-mono);
+  color: var(--muted);
+  padding: 9px 12px 10px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.code-meta { margin-left: auto; font: 400 11.5px var(--font-mono); color: var(--muted); padding: 0 8px 6px; white-space: nowrap; }
+
+.code-scroll { flex: 1; overflow: auto; min-height: 0; }
+.code-inner { display: flex; min-width: 100%; width: max-content; }
+.code-inner pre {
+  margin: 0;
+  font: 400 13px/1.65 var(--font-mono);
+  padding: 16px 0;
+}
+pre.gutter {
+  text-align: right;
+  color: var(--muted);
+  user-select: none;
+  padding-left: 18px; padding-right: 14px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; left: 0;
+  opacity: .85;
+}
+pre.code { padding-left: 18px; padding-right: 24px; flex: 1; }
+pre.code code { font: inherit; background: transparent !important; padding: 0 !important; display: block; }
+.code-scroll.wrapped pre.code code { white-space: pre-wrap; word-break: break-word; }
+.code-scroll.wrapped pre.gutter { display: none; } /* numbers can't track wrapped lines */
+.big-file-note {
+  padding: 8px 20px; font-size: 12.5px; color: var(--muted);
+  border-bottom: 1px solid var(--border); background: var(--bg);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.site-footer {
+  margin-top: 40px;
+  border-top: 1px solid var(--border);
+  padding: 28px 0 44px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Reduced motion: keep it calm for everyone */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ======================= Header ======================= -->
+  <header class="site-header">
+    <div class="header-row">
+      <div>
+        <h1 class="site-title">Gist Lab<span class="dot">.</span></h1>
+        <p class="site-subtitle">
+          Every public gist by <strong>dickinsonre</strong> —
+          <span id="gistCount">…</span> interactive demos &amp; tools, fetched live from the GitHub API.
+          Each one runs right here.
+        </p>
+      </div>
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="https://gist.github.com/dickinsonre" target="_blank" rel="noopener">Gist profile ↗</a>
+        <a class="btn btn-ghost" href="https://github.com/dickinsonre" target="_blank" rel="noopener">GitHub ↗</a>
+        <div class="settings-wrap">
+          <button class="btn btn-icon" id="themeBtn" title="Change theme" aria-label="Change theme" aria-haspopup="true">
+            <span id="themeSwatch" aria-hidden="true"></span>
+          </button>
+          <!-- Theme picker -->
+          <div class="popover theme-menu" id="themeMenu" hidden>
+            <h3>Theme</h3>
+            <div class="theme-list" id="themeList" role="listbox" aria-label="Choose a theme"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rate-limit banner (hidden unless the API tells us we're limited) -->
+    <div class="rate-banner" id="rateBanner" hidden>
+      <strong>GitHub API rate limit reached.</strong>
+      <span id="rateResetText">The limit resets soon.</span>
+      <span>Anonymous access allows 60 requests/hour — add a token via the ⚙ settings to keep browsing, or wait for the reset.</span>
+    </div>
+  </header>
+
+  <!-- ======================= Toolbar ======================= -->
+  <div class="toolbar">
+    <div class="toolbar-row">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Search descriptions and filenames…" aria-label="Search gists" autocomplete="off">
+        <kbd>/</kbd>
+      </div>
+      <select id="sortSelect" aria-label="Sort gists">
+        <option value="updated">Recently updated</option>
+        <option value="created">Recently created</option>
+        <option value="name">Name A–Z</option>
+      </select>
+      <button class="btn btn-ghost" id="refreshBtn" title="Bypass the 10-minute cache and re-fetch">↻ Refresh</button>
+      <div class="settings-wrap">
+        <button class="btn btn-icon" id="settingsBtn" title="Settings (GitHub token)" aria-label="Settings" aria-haspopup="true">⚙</button>
+        <!-- Settings popover -->
+        <div class="popover" id="settingsPopover" hidden>
+          <h3>GitHub token <span style="color:var(--muted);font-weight:400">(optional)</span></h3>
+          <p>Anonymous API access is limited to 60 requests/hour. Paste a
+             <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">personal access token</a>
+             to raise the limit. It is stored only in this browser's localStorage and sent as an
+             <code>Authorization: Bearer</code> header to GitHub.</p>
+          <input type="password" id="tokenInput" placeholder="github_pat_… / ghp_…" autocomplete="off" spellcheck="false">
+          <div class="popover-row">
+            <button class="btn btn-primary btn-sm" id="tokenSave">Save</button>
+            <button class="btn btn-ghost btn-sm" id="tokenClear">Clear</button>
+            <span class="token-state" id="tokenState"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chips" id="langChips" role="group" aria-label="Filter by language"></div>
+  </div>
+
+  <!-- ======================= Stats ======================= -->
+  <div class="stats-line" id="statsLine">
+    <span id="statsText">Loading gists…</span>
+    <span class="badge-cached" id="cachedBadge" hidden>cached</span>
+    <span id="fetchWarning" hidden></span>
+  </div>
+
+  <!-- ======================= Gallery ======================= -->
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <!-- ======================= Netlify apps ======================= -->
+  <section class="apps-section" id="appsSection" aria-label="Hosted Netlify apps">
+    <h2 class="section-title">Hosted apps <span class="section-sub">— Netlify</span></h2>
+    <p class="apps-head-note">Longer-form tools deployed on Netlify. Not gists — but they open right here too,
+      loaded straight from <code>*.netlify.app</code>.</p>
+    <div class="grid" id="appsGrid"></div>
+  </section>
+
+  <!-- ======================= Footer ======================= -->
+  <footer class="site-footer">
+    Data fetched live from the GitHub REST API · Gists render client-side in sandboxed iframes · Hosted apps stream
+    from Netlify · Built for
+    <a href="https://gist.github.com/dickinsonre" target="_blank" rel="noopener">gist.github.com/dickinsonre</a>
+  </footer>
+</div>
+
+<!-- ======================= Run modal ======================= -->
+<div class="overlay" id="runOverlay" hidden>
+  <div class="sheet" id="runSheet" role="dialog" aria-modal="true" aria-label="Run gist">
+    <div class="sheet-toolbar">
+      <div class="sheet-title" id="runTitle">Run</div>
+      <select id="runFilePicker" hidden aria-label="Choose HTML file"></select>
+      <span class="toolbar-spacer"></span>
+      <a class="toolbar-link" id="runGhLink" href="#" target="_blank" rel="noopener">Open on GitHub ↗</a>
+      <button class="toolbar-btn" id="runFullscreen" title="Toggle fullscreen" aria-label="Fullscreen">⛶</button>
+      <button class="toolbar-btn" id="runClose" title="Close (Esc)" aria-label="Close">✕</button>
+    </div>
+    <div class="stub-notice" id="stubNotice" hidden></div>
+    <div class="sheet-body">
+      <iframe class="run-frame" id="runFrame" title="Gist preview"
+              sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-downloads" hidden></iframe>
+      <div class="modal-center" id="runLoading">
+        <div class="spinner"></div>
+        <div>Fetching gist source…</div>
+      </div>
+      <div class="modal-center" id="runError" hidden>
+        <div style="font-size:22px">⚠</div>
+        <div id="runErrorText">Could not load this gist's HTML.</div>
+        <button class="btn btn-ghost btn-sm" id="runRetry">Retry</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= Code modal ======================= -->
+<div class="overlay" id="codeOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="View gist code">
+    <div class="sheet-toolbar">
+      <div class="sheet-title" id="codeTitle">Code</div>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-ghost btn-sm" id="wrapToggle" title="Toggle word wrap" aria-pressed="false">Wrap: off</button>
+      <button class="btn btn-ghost btn-sm" id="copyBtn">Copy</button>
+      <a class="toolbar-link" id="codeGhLink" href="#" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="toolbar-btn" id="codeClose" title="Close (Esc)" aria-label="Close">✕</button>
+    </div>
+    <div class="tabs" id="codeTabs"></div>
+    <div class="big-file-note" id="bigFileNote" hidden>This file is over 1 MB — loading and highlighting may take a moment.</div>
+    <div class="sheet-body">
+      <div class="code-scroll" id="codeScroll" hidden>
+        <div class="code-inner" id="codeInner"></div>
+      </div>
+      <div class="modal-center" id="codeLoading" hidden>
+        <div class="spinner"></div>
+        <div>Fetching file…</div>
+      </div>
+      <div class="modal-center" id="codeError" hidden>
+        <div style="font-size:22px">⚠</div>
+        <div id="codeErrorText">Could not load this file.</div>
+        <button class="btn btn-ghost btn-sm" id="codeRetry">Retry</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- highlight.js (syntax highlighting). If this CDN fails we fall back to plain <pre>. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<script>
+'use strict';
+/* ==========================================================================
+   Gist Lab — application logic
+   ========================================================================== */
+
+/* ---------- Constants & state ---------- */
+var GH_USER        = 'dickinsonre';
+var API_BASE       = 'https://api.github.com/users/' + GH_USER + '/gists';
+var CACHE_KEY      = 'gistlab:cache:v1';
+var CACHE_TTL      = 10 * 60 * 1000;        // 10 minutes
+var TOKEN_KEY      = 'gistlab:token';
+var THEME_KEY      = 'gistlab:theme';
+
+var gists          = [];                    // full list (raw API objects)
+var lastFetched    = null;                  // timestamp (ms) of last successful fetch
+var servedFromCache = false;
+var activeLang     = 'All';
+var searchQuery    = '';
+var sortMode       = 'updated';
+var fileCache      = new Map();             // session cache: raw_url -> text
+var activeModal    = null;                  // { type: 'run'|'code', id, gist }
+var currentBlobUrl = null;                  // blob URL to revoke on close
+var currentCodeText = '';                   // text currently shown in code modal (for Copy)
+var initialRouteDone = false;
+
+/* GitHub linguist-ish colors for language dots (fallback: gray) */
+var LANG_COLORS = {
+  HTML: '#e34c26', JavaScript: '#f1e05a', CSS: '#563d7c', TypeScript: '#3178c6',
+  Markdown: '#083fa1', Python: '#3572A5', JSON: '#7a7a7a', Text: '#8a8580',
+  Shell: '#89e051', 'Jupyter Notebook': '#DA5B0B', Ruby: '#701516', SVG: '#ff9900'
+};
+var FALLBACK_DOT = '#9a958f';
+
+/* gist file language -> highlight.js language id */
+var HLJS_LANG = {
+  HTML: 'xml', XML: 'xml', SVG: 'xml', Markdown: 'markdown', JavaScript: 'javascript',
+  TypeScript: 'typescript', CSS: 'css', Python: 'python', JSON: 'json',
+  Shell: 'bash', Text: 'plaintext', 'Jupyter Notebook': 'json'
+};
+
+/* ---------- Hosted Netlify apps (static list — not gists, but open in-page too) ---------- */
+var NETLIFY_DOT = '#00ad9f';   // Netlify teal for the slug chip dot
+var APPS = [
+  { slug: 'autodesk-drainage-decider-english',     title: 'Which Autodesk Drainage Tool? — InfoDrainage vs Civil 3D vs SSA' },
+  { slug: 'vonnegut-grades-me',                    title: 'The Vonnegut Pass — seven rules over your non-fiction' },
+  { slug: 'its-intensity-not-inches-elango',       title: "It's the Intensity, Not the Inches — an interactive companion" },
+  { slug: 'swmmbench-factorial-jaa',               title: 'swmmbench — Factorial & Hardening Console' },
+  { slug: 'inside-swmm6-gui',                      title: 'Inside the SWMM 6 GUI — openswmm.gui @ swmm6_gui' },
+  { slug: 'openswmm-finite-volume',                title: 'How OpenSWMM Solves Finite Volume — read off the develop branch' },
+  { slug: 'how-to-add-swmm6-options-to-swmm5-inp', title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader' },
+  { slug: 'flood-audit-3d-flood-modeling',         title: 'Flood Pipeline Audit Bench — Muhammad7006/3D-flood-modeling' },
+  { slug: 'swmm-gap-analysis',                     title: 'SWMM Gap Analysis — Rebuilt from First Principles (2026→2030 Horizon)' },
+  { slug: 'icm-swmm-inference',                    title: 'ICM SWMM Inference — Export & Analyse' },
+  { slug: 'ifd-prompt-library',                    title: '250 Prompts for the InfoDrainage Assistant' },
+  { slug: 'iddx-swmm5-converter',                  title: 'InfoDrainage IDDX Explorer v2' },
+  { slug: 'hydra-explorer-swmm-epanet',            title: 'Hydra Explorer — a Rust rewrite of EPANET and SWMM, read from the source' },
+  { slug: 'swmm-jumps-ai-jumps',                   title: 'The Jump Map — Jumps, Ladders, and a Human–AI Division of Labor for SWMM5, SWMM5+ & SWMM6' },
+  { slug: 'swmm5-swmm6-code-diff',                 title: 'SWMM5 ⇄ SWMM6 Source Diff Explorer' },
+  { slug: 'stochastic-hydrology-studio',           title: 'Stochastic Hydrology Studio' },
+  { slug: 'swmm5-swmm6-solver-anotomy',            title: 'SWMM5 Solver Anatomy — the dynamic-wave step, made visible' },
+  { slug: 'swmm5-swmm6-svs',                       title: 'SWMM5 .OUT Singular-Value Spectrum' },
+  { slug: 'five-ai-layers-swmm',                   title: 'SWMM AI Engineering Roadmap' },
+  { slug: 'swmm-refinement-manifold',              title: 'SWMM Refinement Manifold — SWMM5 ↔ SWMM6 Benchmark Explorer' },
+  { slug: 'four-engine-comparison',                title: 'Four-Engine Pipe Comparator — HEC-RAS Pipes · InfoWorks ICM · SWMM5 · SWMM6' },
+  { slug: 'swmm-enablement-gists',                 title: 'Gist Shelf — SWMM5 & SWMM6 Enablement' },
+  { slug: 'one-water-backbone-sewntr',             title: 'One Backbone — SWMM, EPANET and WNTR on a shared SQL layer' },
+  { slug: 'swmm5-conduit-lengthening-advisor',     title: 'SWMM5 Lengthening Advisor — What LENGTHENING_STEP Really Does' },
+  { slug: 'pangea-rainfall-explorer',              title: 'Pangea Rainfall Explorer' }
+];
+APPS.forEach(function (a) { a.url = 'https://' + a.slug + '.netlify.app'; });
+
+/* ---------- Tiny DOM helper ---------- */
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;   // always textContent: gist data is user-controlled
+  return n;
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+/* ---------- Formatting helpers ---------- */
+function fmtBytes(n) {
+  if (n == null || isNaN(n)) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/* Tiny relative-time helper: "3 days ago" */
+function relativeTime(isoOrMs) {
+  var t = typeof isoOrMs === 'number' ? isoOrMs : Date.parse(isoOrMs);
+  var s = Math.max(1, Math.floor((Date.now() - t) / 1000));
+  var units = [
+    ['year', 31536000], ['month', 2592000], ['week', 604800],
+    ['day', 86400], ['hour', 3600], ['minute', 60]
+  ];
+  for (var i = 0; i < units.length; i++) {
+    var v = Math.floor(s / units[i][1]);
+    if (v >= 1) return v + ' ' + units[i][0] + (v > 1 ? 's' : '') + ' ago';
+  }
+  return 'just now';
+}
+
+/* ---------- Gist model helpers ---------- */
+function gistFiles(gist) { return Object.keys(gist.files || {}).map(function (k) { return gist.files[k]; }); }
+function fileLang(file) {
+  if (file.language) return file.language;
+  var m = /\.([a-z0-9]+)$/i.exec(file.filename || '');
+  if (m) {
+    var ext = m[1].toLowerCase();
+    if (ext === 'md') return 'Markdown';
+    if (ext === 'html' || ext === 'htm') return 'HTML';
+    if (ext === 'js') return 'JavaScript';
+    if (ext === 'css') return 'CSS';
+    if (ext === 'json') return 'JSON';
+    if (ext === 'py') return 'Python';
+  }
+  return 'Text';
+}
+function langColor(lang) { return LANG_COLORS[lang] || FALLBACK_DOT; }
+function htmlFiles(gist) {
+  return gistFiles(gist).filter(function (f) { return /\.html?$/i.test(f.filename); });
+}
+function isRunnable(gist) { return htmlFiles(gist).length > 0; }
+function gistTitle(gist) {
+  var d = (gist.description || '').trim();
+  if (d) return d;
+  var files = gistFiles(gist);
+  return files.length ? files[0].filename : 'Untitled gist';
+}
+
+/* ==========================================================================
+   Theme
+   ========================================================================== */
+/* Theme registry — `dark` selects the github-dark highlight.js theme and
+   the dark color-scheme; bg/accent feed the picker swatches. */
+var THEMES = [
+  { id: 'light',    name: 'Warm Light',     dark: false, bg: '#faf8f5', accent: '#c2410c' },
+  { id: 'dark',     name: 'Warm Dark',      dark: true,  bg: '#1c1917', accent: '#c2410c' },
+  { id: 'gators',   name: 'Florida Gators', dark: false, bg: '#f4f6fd', accent: '#fa4616', accent2: '#0021a5' },
+  { id: 'auburn',   name: 'Auburn',         dark: true,  bg: '#071528', accent: '#e86a1a', accent2: '#7ea6e0' },
+  { id: 'oregon',   name: 'Oregon State',   dark: true,  bg: '#100f0e', accent: '#e34d15' },
+  { id: 'autodesk', name: 'Autodesk',       dark: true,  bg: '#1e2329', accent: '#1499d6' }
+];
+function themeById(id) {
+  for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === id) return THEMES[i];
+  return THEMES[0];
+}
+function currentTheme() { return themeById(document.documentElement.dataset.theme).id; }
+function applyTheme(theme, persist) {
+  var t = themeById(theme);
+  document.documentElement.dataset.theme = t.id;
+  if (persist) { try { localStorage.setItem(THEME_KEY, t.id); } catch (e) {} }
+  /* match highlight.js theme to the page theme (tolerate missing links) */
+  var light = $('hljsLight'), darkCss = $('hljsDark');
+  if (light) light.disabled = t.dark;
+  if (darkCss) darkCss.disabled = !t.dark;
+  updateThemeUI(t);
+}
+function buildThemeMenu() {
+  var list = $('themeList');
+  if (!list) return;
+  THEMES.forEach(function (t) {
+    var b = el('button', 'theme-item');
+    b.type = 'button';
+    b.setAttribute('role', 'option');
+    b.dataset.themeId = t.id;
+    var chip = el('span', 'theme-chip');
+    var cbg = el('span'); cbg.style.background = t.bg; cbg.title = 'Background';
+    var cac = el('span'); cac.style.background = t.accent; cac.title = 'Accent';
+    chip.appendChild(cbg);
+    chip.appendChild(cac);
+    if (t.accent2) { var c2 = el('span'); c2.style.background = t.accent2; chip.appendChild(c2); }
+    b.appendChild(chip);
+    b.appendChild(el('span', 'theme-name', t.name));
+    b.appendChild(el('span', 'theme-check', '✓'));
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      applyTheme(t.id, true);
+      toggleThemeMenu(false);
+    });
+    list.appendChild(b);
+  });
+}
+function toggleThemeMenu(force) {
+  var m = $('themeMenu');
+  if (!m) return;
+  var show = (typeof force === 'boolean') ? force : m.hidden;
+  m.hidden = !show;
+}
+function updateThemeUI(t) {
+  var sw = $('themeSwatch'), btn = $('themeBtn');
+  if (sw) sw.style.background = t.accent;
+  if (btn) btn.title = 'Theme: ' + t.name + ' — click to change';
+  var list = $('themeList');
+  if (!list) return;
+  var rows = list.querySelectorAll('.theme-item');
+  for (var i = 0; i < rows.length; i++) {
+    var on = rows[i].dataset.themeId === t.id;
+    rows[i].classList.toggle('on', on);
+    rows[i].setAttribute('aria-selected', String(on));
+  }
+}
+
+/* ==========================================================================
+   Data layer — GitHub REST API (client-side, token optional)
+   ========================================================================== */
+function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+function setToken(t) {
+  try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+}
+
+/* fetch with optional Authorization header (used for API *and* raw URLs) */
+function ghFetch(url) {
+  var headers = { 'Accept': 'application/vnd.github+json' };
+  var t = getToken();
+  if (t) headers['Authorization'] = 'Bearer ' + t;
+  return fetch(url, { headers: headers });
+}
+
+/* Custom error for rate limiting so the UI can show reset time */
+function RateLimitError(resetEpochSec) {
+  var e = new Error('GitHub API rate limit exceeded');
+  e.rateLimited = true;
+  e.reset = resetEpochSec ? resetEpochSec * 1000 : null;
+  return e;
+}
+function checkRateLimit(res) {
+  if (res.status === 403 && res.headers.get('X-RateLimit-Remaining') === '0') {
+    throw RateLimitError(res.headers.get('X-RateLimit-Reset'));
+  }
+}
+
+/* Fetch ALL public gists, looping pages until a short page is returned */
+function fetchAllGists() {
+  var all = [];
+  function next(page) {
+    return ghFetch(API_BASE + '?per_page=100&page=' + page).then(function (res) {
+      checkRateLimit(res);
+      if (!res.ok) throw new Error('GitHub API responded ' + res.status + ' ' + res.statusText);
+      return res.json();
+    }).then(function (batch) {
+      if (!Array.isArray(batch)) throw new Error('Unexpected API response');
+      all = all.concat(batch);
+      return (batch.length === 100) ? next(page + 1) : all;   // short page => done
+    });
+  }
+  return next(1);
+}
+
+/* Fetch a raw file's text, session-cached */
+function fetchFileText(file) {
+  if (fileCache.has(file.raw_url)) return Promise.resolve(fileCache.get(file.raw_url));
+  return ghFetch(file.raw_url).then(function (res) {
+    checkRateLimit(res);
+    if (!res.ok) throw new Error('Failed to fetch ' + file.filename + ' (' + res.status + ')');
+    return res.text();
+  }).then(function (text) {
+    fileCache.set(file.raw_url, text);
+    return text;
+  });
+}
+
+/* localStorage list cache (10-minute TTL) */
+function readCache() {
+  try {
+    var raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    var c = JSON.parse(raw);
+    if (!c || !Array.isArray(c.data) || typeof c.ts !== 'number') return null;
+    return c;
+  } catch (e) { return null; }
+}
+function writeCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
+}
+
+/* ==========================================================================
+   Rendering — stats, chips, grid, skeletons, states
+   ========================================================================== */
+function renderStats() {
+  var runnable = gists.filter(isRunnable).length;
+  var parts = [
+    gists.length + ' gists',
+    runnable + ' runnable',
+    APPS.length + ' hosted apps',
+    'fetched ' + (lastFetched ? relativeTime(lastFetched) : 'never')
+  ];
+  $('statsText').textContent = parts.join('  ·  ');
+  $('gistCount').textContent = gists.length;
+  $('cachedBadge').hidden = !servedFromCache;
+}
+
+/* Language filter chips, auto-derived from the data (counts = gists per language) */
+function renderChips() {
+  var counts = {};
+  gists.forEach(function (g) {
+    var langs = {};
+    gistFiles(g).forEach(function (f) { langs[fileLang(f)] = true; });
+    Object.keys(langs).forEach(function (l) { counts[l] = (counts[l] || 0) + 1; });
+  });
+  var langs = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b); });
+  var box = $('langChips');
+  box.innerHTML = '';
+
+  function chip(label, count, color) {
+    var c = el('button', 'chip' + (activeLang === label ? ' active' : ''));
+    c.type = 'button';
+    if (color) { var d = el('span', 'dot'); d.style.background = color; c.appendChild(d); }
+    c.appendChild(el('span', null, label));
+    c.appendChild(el('span', 'count', String(count)));
+    c.addEventListener('click', function () { activeLang = label; renderChips(); renderGrid(); });
+    return c;
+  }
+  box.appendChild(chip('All', gists.length, null));
+  langs.forEach(function (l) { box.appendChild(chip(l, counts[l], langColor(l))); });
+}
+
+/* Filter + sort, then render the card grid */
+function visibleGists() {
+  var q = searchQuery.trim().toLowerCase();
+  var list = gists.filter(function (g) {
+    if (activeLang !== 'All') {
+      var has = gistFiles(g).some(function (f) { return fileLang(f) === activeLang; });
+      if (!has) return false;
+    }
+    if (q) {
+      var hay = ((g.description || '') + ' ' + gistFiles(g).map(function (f) { return f.filename; }).join(' ')).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+  list.sort(function (a, b) {
+    if (sortMode === 'name') return gistTitle(a).toLowerCase().localeCompare(gistTitle(b).toLowerCase());
+    if (sortMode === 'created') return Date.parse(b.created_at) - Date.parse(a.created_at);
+    return Date.parse(b.updated_at) - Date.parse(a.updated_at);   // default: recently updated
+  });
+  return list;
+}
+
+function renderGrid() {
+  var grid = $('grid');
+  grid.innerHTML = '';
+  var list = visibleGists();
+
+  if (!list.length) {
+    var empty = el('div', 'state-box');
+    empty.style.gridColumn = '1 / -1';
+    empty.appendChild(el('h2', null, 'No gists match'));
+    empty.appendChild(el('p', null, 'Try a different search term or clear the language filter.'));
+    grid.appendChild(empty);
+    return;
+  }
+
+  list.forEach(function (g, i) {
+    var card = el('article', 'card');
+    card.style.setProperty('--d', Math.min(i, 24) * 30 + 'ms');   // staggered entrance
+
+    var title = el('h3', 'card-title', gistTitle(g));
+    title.title = gistTitle(g);
+    card.appendChild(title);
+
+    var meta = el('div', 'card-meta');
+    meta.appendChild(el('span', null, 'updated ' + relativeTime(g.updated_at)));
+    if (isRunnable(g)) meta.appendChild(el('span', 'runnable-tag', '▶ runnable'));
+    card.appendChild(meta);
+
+    var files = el('div', 'card-files');
+    gistFiles(g).forEach(function (f) {
+      var chipEl = el('span', 'file-chip');
+      chipEl.title = f.filename + ' — ' + fileLang(f) + ', ' + fmtBytes(f.size);
+      var dot = el('span', 'dot'); dot.style.background = langColor(fileLang(f));
+      chipEl.appendChild(dot);
+      chipEl.appendChild(el('span', 'fname', f.filename));
+      chipEl.appendChild(el('span', 'fsize', fmtBytes(f.size)));
+      files.appendChild(chipEl);
+    });
+    card.appendChild(files);
+
+    var actions = el('div', 'card-actions');
+    if (isRunnable(g)) {
+      var run = el('button', 'btn btn-primary', '▶ Run');
+      run.type = 'button';
+      run.addEventListener('click', function () { openRunModal(g); });
+      actions.appendChild(run);
+    }
+    var code = el('button', 'btn btn-ghost', 'Code');
+    code.type = 'button';
+    code.addEventListener('click', function () { openCodeModal(g); });
+    actions.appendChild(code);
+    var gh = el('a', 'btn btn-ghost', '↗ GitHub');
+    gh.href = g.html_url; gh.target = '_blank'; gh.rel = 'noopener';
+    actions.appendChild(gh);
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
+}
+
+function renderSkeletons() {
+  var grid = $('grid');
+  grid.innerHTML = '';
+  for (var i = 0; i < 8; i++) {
+    var c = el('div', 'skel-card');
+    c.appendChild(el('div', 'skel skel-title'));
+    c.appendChild(el('div', 'skel skel-title2'));
+    c.appendChild(el('div', 'skel skel-meta'));
+    c.appendChild(el('div', 'skel skel-chips'));
+    c.appendChild(el('div', 'skel skel-btns'));
+    grid.appendChild(c);
+  }
+}
+
+function renderErrorState(message) {
+  var grid = $('grid');
+  grid.innerHTML = '';
+  var box = el('div', 'state-box');
+  box.style.gridColumn = '1 / -1';
+  box.appendChild(el('h2', null, 'Couldn’t load gists'));
+  box.appendChild(el('p', null, message + ' Check your connection (or the rate-limit note above) and try again.'));
+  var retry = el('button', 'btn btn-primary', 'Retry');
+  retry.type = 'button';
+  retry.addEventListener('click', function () { loadGists(true); });
+  box.appendChild(retry);
+  grid.appendChild(box);
+}
+
+/* ==========================================================================
+   Netlify apps — static cards that open in the same run-modal shell
+   ========================================================================== */
+function renderApps() {
+  var grid = $('appsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  var q = searchQuery.trim().toLowerCase();
+  var list = APPS.filter(function (a) {
+    return !q || (a.title + ' ' + a.slug).toLowerCase().indexOf(q) !== -1;
+  });
+
+  if (!list.length) {
+    var empty = el('div', 'state-box');
+    empty.style.gridColumn = '1 / -1';
+    empty.appendChild(el('h2', null, 'No apps match'));
+    empty.appendChild(el('p', null, 'Try a different search term.'));
+    grid.appendChild(empty);
+    return;
+  }
+
+  list.forEach(function (a, i) {
+    var card = el('article', 'card');
+    card.style.setProperty('--d', Math.min(i, 24) * 30 + 'ms');
+
+    var title = el('h3', 'card-title', a.title);
+    title.title = a.title;
+    card.appendChild(title);
+
+    var meta = el('div', 'card-meta');
+    meta.appendChild(el('span', null, 'hosted app'));
+    meta.appendChild(el('span', 'runnable-tag', '▶ opens here'));
+    card.appendChild(meta);
+
+    var files = el('div', 'card-files');
+    var chipEl = el('span', 'file-chip');
+    chipEl.title = a.url;
+    var dot = el('span', 'dot'); dot.style.background = NETLIFY_DOT;
+    chipEl.appendChild(dot);
+    chipEl.appendChild(el('span', 'fname', a.slug + '.netlify.app'));
+    files.appendChild(chipEl);
+    card.appendChild(files);
+
+    var actions = el('div', 'card-actions');
+    var open = el('button', 'btn btn-primary', '▶ Open');
+    open.type = 'button';
+    open.addEventListener('click', function () { openAppModal(a); });
+    actions.appendChild(open);
+    var visit = el('a', 'btn btn-ghost', '↗ Visit');
+    visit.href = a.url; visit.target = '_blank'; visit.rel = 'noopener';
+    actions.appendChild(visit);
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
+}
+
+/* ==========================================================================
+   Modal plumbing (shared behavior for Run + Code shells)
+   ========================================================================== */
+function showOverlay(id) {
+  $(id).hidden = false;
+  document.body.classList.add('locked');           // prevent body scroll
+}
+function hideOverlay(id) {
+  $(id).hidden = true;
+  if ($('runOverlay').hidden && $('codeOverlay').hidden) {
+    document.body.classList.remove('locked');
+  }
+}
+function setHashForModal(type, id) {
+  var target = (type === 'app')
+    ? '#app/' + id
+    : '#gist/' + id + (type === 'code' ? '/code' : '');
+  if (location.hash !== target) location.hash = target;   // fires hashchange; handler no-ops
+}
+function clearHash() {
+  if (/^#(gist|app)\//.test(location.hash)) {
+    history.pushState(null, '', location.pathname + location.search); // no hashchange event
+  }
+}
+function closeActiveModal(fromHash) {
+  if (!activeModal) return;
+  if (activeModal.type === 'run' || activeModal.type === 'app') {
+    hideOverlay('runOverlay');
+    if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+    var f = $('runFrame'); f.src = 'about:blank'; f.hidden = true;
+    if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
+  } else {
+    hideOverlay('codeOverlay');
+  }
+  activeModal = null;
+  if (!fromHash) clearHash();
+}
+
+/* ==========================================================================
+   Run modal — fetch raw HTML, inline sibling JS/CSS, run in sandboxed iframe
+   ========================================================================== */
+function buildRunnableHtml(gist, file) {
+  return fetchFileText(file).then(function (html) {
+    /* Bonus: inline sibling .js/.css referenced by <script src> / <link href>.
+       Most gists are single self-contained files; any failure here must never
+       break the base case, hence the all-swallowing try/catch. */
+    try {
+      var siblings = gistFiles(gist).filter(function (f) {
+        return f.filename !== file.filename && /\.(js|css)$/i.test(f.filename);
+      });
+      if (!siblings.length) return html;
+      return siblings.reduce(function (p, sib) {
+        return p.then(function (acc) {
+          return fetchFileText(sib).then(function (content) {
+            var name = escapeRegExp(sib.filename);
+            if (/\.js$/i.test(sib.filename)) {
+              var reScript = new RegExp(
+                '<script\\b[^>]*\\bsrc=["\'][^"\']*' + name + '(?:\\?[^"\']*)?["\'][^>]*>\\s*<\\/script>', 'gi');
+              return acc.replace(reScript, function () {
+                return '<script>\n' + content + '\n<\/script>';
+              });
+            }
+            var reLink = new RegExp(
+              '<link\\b[^>]*\\bhref=["\'][^"\']*' + name + '(?:\\?[^"\']*)?["\'][^>]*>', 'gi');
+            return acc.replace(reLink, function () {
+              return '<style>\n' + content + '\n</style>';
+            });
+          });
+        });
+      }, Promise.resolve(html));
+    } catch (e) {
+      return html;
+    }
+  });
+}
+
+function openRunModal(gist, opts) {
+  opts = opts || {};
+  var htmls = htmlFiles(gist);
+  if (!htmls.length) { openCodeModal(gist, opts); return; }   // deep link to a non-runnable gist
+
+  closeActiveModal(true);                                     // switch cleanly if one is open
+  activeModal = { type: 'run', id: gist.id, gist: gist };
+
+  $('runTitle').textContent = gistTitle(gist);
+  $('runTitle').title = gistTitle(gist);
+  $('runGhLink').href = gist.html_url;
+  $('runGhLink').textContent = 'Open on GitHub ↗';
+
+  var picker = $('runFilePicker');
+  picker.innerHTML = '';
+  if (htmls.length > 1) {
+    htmls.forEach(function (f) { picker.appendChild(new Option(f.filename, f.filename)); });
+    picker.hidden = false;
+  } else {
+    picker.hidden = true;
+  }
+
+  showOverlay('runOverlay');
+  if (!opts.fromHash) setHashForModal('run', gist.id);
+  loadRunFile(gist, picker.hidden ? htmls[0] :
+    htmls.filter(function (f) { return f.filename === picker.value; })[0] || htmls[0]);
+}
+
+function loadRunFile(gist, file) {
+  $('runLoading').hidden = false;
+  $('runError').hidden = true;
+  $('runFrame').hidden = true;
+  $('stubNotice').hidden = true;
+
+  buildRunnableHtml(gist, file).then(function (html) {
+    if (!activeModal || activeModal.type !== 'run' || activeModal.id !== gist.id) return; // closed meanwhile
+    if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+    currentBlobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    var frame = $('runFrame');
+    frame.src = currentBlobUrl;
+    frame.hidden = false;
+    $('runLoading').hidden = true;
+
+    /* Stub detection: tiny HTML files are usually placeholders, but still run them */
+    if (html.length < 500) {
+      $('stubNotice').textContent =
+        'This gist’s HTML looks like a stub or placeholder (only ' + html.length + ' bytes).';
+      $('stubNotice').hidden = false;
+    }
+  }).catch(function (err) {
+    if (!activeModal || activeModal.type !== 'run') return;
+    $('runLoading').hidden = true;
+    $('runError').hidden = false;
+    $('runErrorText').textContent = 'Could not load ' + file.filename + ': ' + err.message;
+    $('runRetry').onclick = function () { loadRunFile(gist, file); };
+  });
+}
+
+/* Hosted Netlify app — loads directly by URL into the same run-modal shell.
+   Cross-origin embedding errors are not detectable from JS, so the notice bar
+   always offers the "Open on Netlify" escape hatch. */
+function openAppModal(app, opts) {
+  opts = opts || {};
+  closeActiveModal(true);
+  activeModal = { type: 'app', id: app.slug, app: app };
+
+  $('runTitle').textContent = app.title;
+  $('runTitle').title = app.title;
+  $('runGhLink').href = app.url;
+  $('runGhLink').textContent = 'Open on Netlify ↗';
+  $('runFilePicker').hidden = true;
+
+  $('runLoading').hidden = true;
+  $('runError').hidden = true;
+  $('stubNotice').textContent =
+    'Hosted on Netlify — loading ' + app.slug + '.netlify.app in a sandboxed frame. ' +
+    'If it stays blank, use “Open on Netlify ↗” (some apps block embedding).';
+  $('stubNotice').hidden = false;
+
+  var frame = $('runFrame');
+  if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+  frame.src = app.url;
+  frame.hidden = false;
+
+  showOverlay('runOverlay');
+  if (!opts.fromHash) setHashForModal('app', app.slug);
+}
+
+/* ==========================================================================
+   Code modal — tabs, syntax highlighting, line numbers, copy, wrap
+   ========================================================================== */
+function hljsLangFor(file) {
+  var l = fileLang(file);
+  return HLJS_LANG[l] || 'plaintext';
+}
+
+function openCodeModal(gist, opts) {
+  opts = opts || {};
+  closeActiveModal(true);
+  activeModal = { type: 'code', id: gist.id, gist: gist };
+
+  $('codeTitle').textContent = gistTitle(gist);
+  $('codeTitle').title = gistTitle(gist);
+  $('codeGhLink').href = gist.html_url;
+
+  var files = gistFiles(gist);
+  var tabs = $('codeTabs');
+  tabs.innerHTML = '';
+  files.forEach(function (f) {
+    var t = el('button', 'tab', f.filename);
+    t.type = 'button';
+    t.dataset.filename = f.filename;
+    t.addEventListener('click', function () { selectCodeFile(gist, f); });
+    tabs.appendChild(t);
+  });
+
+  showOverlay('codeOverlay');
+  if (!opts.fromHash) setHashForModal('code', gist.id);
+
+  /* Prefer the runnable HTML file as the default tab, else the first file */
+  var preferred = htmlFiles(gist)[0] || files[0];
+  if (preferred) selectCodeFile(gist, preferred);
+}
+
+function selectCodeFile(gist, file) {
+  var tabs = $('codeTabs').querySelectorAll('.tab');
+  Array.prototype.forEach.call(tabs, function (t) {
+    t.classList.toggle('active', t.dataset.filename === file.filename);
+  });
+
+  /* Size meta + big-file note */
+  var meta = $('codeTabs').querySelector('.code-meta');
+  if (!meta) { meta = el('span', 'code-meta'); $('codeTabs').appendChild(meta); }
+  meta.textContent = fileLang(file) + ' · ' + fmtBytes(file.size);
+  $('bigFileNote').hidden = !(file.size && file.size > 1024 * 1024);
+
+  $('codeScroll').hidden = true;
+  $('codeLoading').hidden = false;
+  $('codeError').hidden = true;
+
+  fetchFileText(file).then(function (text) {
+    if (!activeModal || activeModal.type !== 'code' || activeModal.id !== gist.id) return;
+    $('codeLoading').hidden = true;
+    currentCodeText = text;
+    renderCodeView(text, file);
+    $('codeScroll').hidden = false;
+    $('codeScroll').scrollTop = 0;
+  }).catch(function (err) {
+    if (!activeModal || activeModal.type !== 'code') return;
+    $('codeLoading').hidden = true;
+    $('codeError').hidden = false;
+    $('codeErrorText').textContent = 'Could not load ' + file.filename + ': ' + err.message;
+    $('codeRetry').onclick = function () { selectCodeFile(gist, file); };
+  });
+}
+
+function renderCodeView(text, file) {
+  var inner = $('codeInner');
+  inner.innerHTML = '';
+
+  /* Syntax highlight via highlight.js; fall back to plain escaped text */
+  var codeHtml;
+  var lang = hljsLangFor(file);
+  if (window.hljs && hljs.getLanguage && hljs.getLanguage(lang)) {
+    try { codeHtml = hljs.highlight(text, { language: lang }).value; }
+    catch (e) { codeHtml = escapeHtml(text); }
+  } else {
+    codeHtml = escapeHtml(text);
+  }
+
+  /* Line numbers: a sticky gutter <pre> with identical line-height */
+  var lineCount = text.split('\n').length;
+  var nums = new Array(lineCount);
+  for (var i = 0; i < lineCount; i++) nums[i] = i + 1;
+  var gutter = el('pre', 'gutter', nums.join('\n'));
+
+  var codePre = el('pre', 'code');
+  var codeEl = el('code', 'hljs language-' + lang);
+  codeEl.innerHTML = codeHtml;   // safe: either hljs output or fully escaped text
+  codePre.appendChild(codeEl);
+
+  inner.appendChild(gutter);
+  inner.appendChild(codePre);
+}
+
+/* Copy-to-clipboard with feedback and an old-school fallback */
+function copyCurrentCode() {
+  var btn = $('copyBtn');
+  function done() {
+    btn.textContent = 'Copied!';
+    setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentCodeText).then(done, function () { legacyCopy(); done(); });
+  } else { legacyCopy(); done(); }
+  function legacyCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = currentCodeText;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ==========================================================================
+   Deep links — #gist/<id> (run) and #gist/<id>/code (code viewer)
+   ========================================================================== */
+function parseHash() {
+  var g = /^#gist\/([0-9a-f]+)(\/code)?\/?$/i.exec(location.hash || '');
+  if (g) return { id: g[1], code: !!g[2] };
+  var a = /^#app\/([a-z0-9-]+)\/?$/i.exec(location.hash || '');
+  if (a) return { app: a[1] };
+  return null;
+}
+function routeFromHash() {
+  var h = parseHash();
+  if (!h) {
+    if (activeModal) closeActiveModal(true);
+    return;
+  }
+  if (h.app) {
+    if (activeModal && activeModal.type === 'app' && activeModal.id === h.app) return;
+    var a = null;
+    for (var i = 0; i < APPS.length; i++) if (APPS[i].slug === h.app) { a = APPS[i]; break; }
+    if (a) openAppModal(a, { fromHash: true });
+    return;
+  }
+  var already = activeModal && activeModal.id === h.id &&
+                activeModal.type === (h.code ? 'code' : 'run');
+  if (already) return;                       // we set this hash ourselves
+  var g = null;
+  for (var i = 0; i < gists.length; i++) if (gists[i].id === h.id) { g = gists[i]; break; }
+  if (!g) return;                            // unknown / not-yet-loaded gist: ignore
+  if (h.code) openCodeModal(g, { fromHash: true });
+  else openRunModal(g, { fromHash: true });
+}
+window.addEventListener('hashchange', routeFromHash);
+
+/* ==========================================================================
+   Load flow — cache first (10 min TTL), then live fetch with skeletons
+   ========================================================================== */
+function setData(data, ts, fromCache) {
+  gists = data;
+  lastFetched = ts;
+  servedFromCache = !!fromCache;
+  renderStats();
+  renderChips();
+  renderGrid();
+}
+
+function showRateBanner(resetMs) {
+  var when = resetMs
+    ? new Date(resetMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : 'soon';
+  $('rateResetText').textContent = 'The limit resets at ' + when + '.';
+  $('rateBanner').hidden = false;
+}
+
+function loadGists(bypassCache) {
+  $('fetchWarning').hidden = true;
+  $('refreshBtn').disabled = true;
+
+  /* Serve a fresh cache immediately */
+  if (!bypassCache) {
+    var c = readCache();
+    if (c && (Date.now() - c.ts) < CACHE_TTL) {
+      setData(c.data, c.ts, true);
+      finishLoad();
+      return Promise.resolve();
+    }
+  }
+
+  renderSkeletons();
+  return fetchAllGists().then(function (data) {
+    writeCache(data);
+    $('rateBanner').hidden = true;
+    setData(data, Date.now(), false);
+    finishLoad();
+  }).catch(function (err) {
+    if (err && err.rateLimited) showRateBanner(err.reset);
+    /* Fall back to a stale cache if we have one — better than an empty page */
+    var stale = readCache();
+    if (stale && stale.data.length) {
+      setData(stale.data, stale.ts, true);
+      var w = $('fetchWarning');
+      w.textContent = 'refresh failed (' + err.message + ') — showing cached data';
+      w.hidden = false;
+    } else {
+      $('statsText').textContent = 'Failed to load gists.';
+      renderErrorState(err.message || 'Unknown error');
+    }
+    finishLoad();
+  });
+
+  function finishLoad() {
+    $('refreshBtn').disabled = false;
+    if (!initialRouteDone) { initialRouteDone = true; routeFromHash(); }
+  }
+}
+
+/* ==========================================================================
+   Settings popover (optional GitHub token)
+   ========================================================================== */
+function refreshTokenUI() {
+  var t = getToken();
+  $('tokenInput').value = t;
+  $('tokenState').textContent = t ? 'token saved' : 'no token';
+}
+function togglePopover(force) {
+  var p = $('settingsPopover');
+  var show = (typeof force === 'boolean') ? force : p.hidden;
+  p.hidden = !show;
+  if (show) { refreshTokenUI(); $('tokenInput').focus(); }
+}
+
+/* ==========================================================================
+   Event wiring & init
+   ========================================================================== */
+function bindUI() {
+  /* Theme picker */
+  $('themeBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    togglePopover(false);
+    toggleThemeMenu();
+  });
+  $('themeMenu').addEventListener('click', function (e) { e.stopPropagation(); });
+
+  /* Search: live filter; "/" focuses from anywhere */
+  $('searchInput').addEventListener('input', function (e) {
+    searchQuery = e.target.value;
+    renderGrid();
+    renderApps();
+  });
+  document.addEventListener('keydown', function (e) {
+    var tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) {
+      e.preventDefault();
+      $('searchInput').focus();
+    }
+    if (e.key === 'Escape') {
+      if (!$('settingsPopover').hidden) { togglePopover(false); return; }
+      if (!$('themeMenu').hidden) { toggleThemeMenu(false); return; }
+      closeActiveModal(false);
+    }
+  });
+
+  /* Sort + refresh */
+  $('sortSelect').addEventListener('change', function (e) {
+    sortMode = e.target.value;
+    renderGrid();
+  });
+  $('refreshBtn').addEventListener('click', function () { loadGists(true); });
+
+  /* Settings popover */
+  $('settingsBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    togglePopover();
+  });
+  $('settingsPopover').addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('click', function () { togglePopover(false); toggleThemeMenu(false); });
+  $('tokenSave').addEventListener('click', function () {
+    setToken($('tokenInput').value.trim());
+    refreshTokenUI();
+    togglePopover(false);
+    loadGists(true);   // re-fetch with the new credentials
+  });
+  $('tokenClear').addEventListener('click', function () {
+    setToken('');
+    refreshTokenUI();
+  });
+
+  /* Run modal controls */
+  $('runClose').addEventListener('click', function () { closeActiveModal(false); });
+  $('runOverlay').addEventListener('click', function (e) {
+    if (e.target === $('runOverlay')) closeActiveModal(false);   // backdrop click
+  });
+  $('runFilePicker').addEventListener('change', function () {
+    if (!activeModal || activeModal.type !== 'run') return;
+    var g = activeModal.gist, name = $('runFilePicker').value;
+    var f = htmlFiles(g).filter(function (x) { return x.filename === name; })[0];
+    if (f) loadRunFile(g, f);
+  });
+  $('runFullscreen').addEventListener('click', function () {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if ($('runSheet').requestFullscreen) { $('runSheet').requestFullscreen(); }
+  });
+
+  /* Code modal controls */
+  $('codeClose').addEventListener('click', function () { closeActiveModal(false); });
+  $('codeOverlay').addEventListener('click', function (e) {
+    if (e.target === $('codeOverlay')) closeActiveModal(false);
+  });
+  $('copyBtn').addEventListener('click', copyCurrentCode);
+  $('wrapToggle').addEventListener('click', function () {
+    var sc = $('codeScroll');
+    var on = sc.classList.toggle('wrapped');
+    $('wrapToggle').textContent = 'Wrap: ' + (on ? 'on' : 'off');
+    $('wrapToggle').setAttribute('aria-pressed', String(on));
+  });
+}
+
+/* Boot */
+buildThemeMenu();
+applyTheme(currentTheme(), false);
+renderApps();
+bindUI();
+refreshTokenUI();
+loadGists(false);
+</script>
+</body>
+</html>
