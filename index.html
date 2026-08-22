@@ -375,6 +375,8 @@ kbd {
   white-space: nowrap;
 }
 .jump-top:hover { color: var(--accent); }
+.apps-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.apps-controls select { height: 34px; font-size: 12.5px; border-radius: 8px; max-width: 150px; }
 .jump-fab {
   position: fixed;
   right: 22px; bottom: 22px;
@@ -649,7 +651,6 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -739,7 +740,13 @@ pre.code code { font: inherit; background: transparent !important; padding: 0 !i
   <section class="apps-section" id="appsSection" aria-label="Hosted Netlify apps">
     <div class="section-head">
       <h2 class="section-title">Hosted apps <span class="section-sub">— Netlify</span></h2>
-      <a href="#top" class="jump-top" id="jumpTopLink">↑ back to gists</a>
+      <div class="apps-controls">
+        <select id="appSortSelect" aria-label="Sort hosted apps">
+          <option value="added">Newest first</option>
+          <option value="name">Name A–Z</option>
+        </select>
+        <a href="#top" class="jump-top" id="jumpTopLink">↑ back to gists</a>
+      </div>
     </div>
     <p class="apps-head-note">Longer-form tools deployed on Netlify. Not gists — but they open right here too,
       loaded straight from <code>*.netlify.app</code>.</p>
@@ -840,6 +847,7 @@ var servedFromCache = false;
 var activeLang     = 'All';
 var searchQuery    = '';
 var sortMode       = 'updated';
+var appSortMode    = 'added';               // 'added' (array order) | 'name' (A–Z)
 var fileCache      = new Map();             // session cache: raw_url -> text
 var activeModal    = null;                  // { type: 'run'|'code', id, gist }
 var currentBlobUrl = null;                  // blob URL to revoke on close
@@ -864,6 +872,7 @@ var HLJS_LANG = {
 /* ---------- Hosted Netlify apps (static list — not gists, but open in-page too) ---------- */
 var NETLIFY_DOT = '#00ad9f';   // Netlify teal for the slug chip dot
 var APPS = [
+  { slug: 'hydrograph-fingerprint-lab',            title: 'Hydrograph Fingerprint Lab' },
   { slug: 'singapore-water-budget',                title: 'Singapore Water Budget — two budgets, one island' },
   { slug: 'swmm5-swmm6-inp-file-upgrader',         title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader (.inp file edition)' },
   { slug: 'moa-swmm-agent-society',                title: 'SWMM5 Agent Society: Mixture of Models Lab' },
@@ -1312,6 +1321,11 @@ function renderApps() {
   var list = APPS.filter(function (a) {
     return !q || (a.title + ' ' + a.slug).toLowerCase().indexOf(q) !== -1;
   });
+  if (appSortMode === 'name') {
+    list = list.slice().sort(function (a, b) {
+      return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+    });
+  }
 
   if (!list.length) {
     var empty = el('div', 'state-box');
@@ -1786,6 +1800,10 @@ function bindUI() {
   $('sortSelect').addEventListener('change', function (e) {
     sortMode = e.target.value;
     renderGrid();
+  });
+  $('appSortSelect').addEventListener('change', function (e) {
+    appSortMode = e.target.value;
+    renderApps();
   });
   $('refreshBtn').addEventListener('click', function () { loadGists(true); });
 
