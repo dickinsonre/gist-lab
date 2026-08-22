@@ -466,6 +466,18 @@ kbd {
 .card-meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .card-meta .runnable-tag { color: var(--accent-2); font-weight: 500; }
 
+/* Two-sentence summary shown on every card */
+.card-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .card-files { display: flex; flex-wrap: wrap; gap: 6px; }
 .file-chip {
   display: inline-flex;
@@ -872,42 +884,145 @@ var HLJS_LANG = {
 /* ---------- Hosted Netlify apps (static list — not gists, but open in-page too) ---------- */
 var NETLIFY_DOT = '#00ad9f';   // Netlify teal for the slug chip dot
 var APPS = [
-  { slug: 'hydrograph-fingerprint-lab',            title: 'Hydrograph Fingerprint Lab' },
-  { slug: 'singapore-water-budget',                title: 'Singapore Water Budget — two budgets, one island' },
-  { slug: 'swmm5-swmm6-inp-file-upgrader',         title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader (.inp file edition)' },
-  { slug: 'moa-swmm-agent-society',                title: 'SWMM5 Agent Society: Mixture of Models Lab' },
-  { slug: 'copulas-for-swmm',                      title: 'Copulas for SWMM — When Hazards Arrive Together' },
-  { slug: 'open-swmm-finite-volume-swmm6',         title: 'How OpenSWMM Solves Finite Volume — SWMM6 edition' },
-  { slug: 'modmods-explained',                     title: 'modpods, for a SWMM person' },
-  { slug: 'automatic-rainfall-runoff-models',      title: 'Automatic Rainfall-Runoff Models — Evidence Atlas' },
-  { slug: 'swmm6-anugua-2d',                       title: 'Where the Water Crosses — the PipeDream/ANUGA coupling, read for SWMM6' },
-  { slug: 'autodesk-drainage-decider-english',     title: 'Which Autodesk Drainage Tool? — InfoDrainage vs Civil 3D vs SSA' },
-  { slug: 'vonnegut-grades-me',                    title: 'The Vonnegut Pass — seven rules over your non-fiction' },
-  { slug: 'its-intensity-not-inches-elango',       title: "It's the Intensity, Not the Inches — an interactive companion" },
-  { slug: 'swmmbench-factorial-jaa',               title: 'swmmbench — Factorial & Hardening Console' },
-  { slug: 'inside-swmm6-gui',                      title: 'Inside the SWMM 6 GUI — openswmm.gui @ swmm6_gui' },
-  { slug: 'openswmm-finite-volume',                title: 'How OpenSWMM Solves Finite Volume — read off the develop branch' },
-  { slug: 'how-to-add-swmm6-options-to-swmm5-inp', title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader' },
-  { slug: 'flood-audit-3d-flood-modeling',         title: 'Flood Pipeline Audit Bench — Muhammad7006/3D-flood-modeling' },
-  { slug: 'swmm-gap-analysis',                     title: 'SWMM Gap Analysis — Rebuilt from First Principles (2026→2030 Horizon)' },
-  { slug: 'icm-swmm-inference',                    title: 'ICM SWMM Inference — Export & Analyse' },
-  { slug: 'ifd-prompt-library',                    title: '250 Prompts for the InfoDrainage Assistant' },
-  { slug: 'iddx-swmm5-converter',                  title: 'InfoDrainage IDDX Explorer v2' },
-  { slug: 'hydra-explorer-swmm-epanet',            title: 'Hydra Explorer — a Rust rewrite of EPANET and SWMM, read from the source' },
-  { slug: 'swmm-jumps-ai-jumps',                   title: 'The Jump Map — Jumps, Ladders, and a Human–AI Division of Labor for SWMM5, SWMM5+ & SWMM6' },
-  { slug: 'swmm5-swmm6-code-diff',                 title: 'SWMM5 ⇄ SWMM6 Source Diff Explorer' },
-  { slug: 'stochastic-hydrology-studio',           title: 'Stochastic Hydrology Studio' },
-  { slug: 'swmm5-swmm6-solver-anotomy',            title: 'SWMM5 Solver Anatomy — the dynamic-wave step, made visible' },
-  { slug: 'swmm5-swmm6-svs',                       title: 'SWMM5 .OUT Singular-Value Spectrum' },
-  { slug: 'five-ai-layers-swmm',                   title: 'SWMM AI Engineering Roadmap' },
-  { slug: 'swmm-refinement-manifold',              title: 'SWMM Refinement Manifold — SWMM5 ↔ SWMM6 Benchmark Explorer' },
-  { slug: 'four-engine-comparison',                title: 'Four-Engine Pipe Comparator — HEC-RAS Pipes · InfoWorks ICM · SWMM5 · SWMM6' },
-  { slug: 'swmm-enablement-gists',                 title: 'Gist Shelf — SWMM5 & SWMM6 Enablement' },
-  { slug: 'one-water-backbone-sewntr',             title: 'One Backbone — SWMM, EPANET and WNTR on a shared SQL layer' },
-  { slug: 'swmm5-conduit-lengthening-advisor',     title: 'SWMM5 Lengthening Advisor — What LENGTHENING_STEP Really Does' },
-  { slug: 'pangea-rainfall-explorer',              title: 'Pangea Rainfall Explorer' }
+  { slug: 'hydrograph-fingerprint-lab',            title: 'Hydrograph Fingerprint Lab',
+    desc: "Computes a hydrograph's full signature vector — moments, peak rate factor, flashiness, volume timing, and dip depth — instead of peak discharge alone. Adds recession analysis, width-function geometry, decisive basin-vs-artifact tests, and A/B signature diffs." },
+  { slug: 'singapore-water-budget',                title: 'Singapore Water Budget — two budgets, one island',
+    desc: "Merges a reading companion for Lin Xu et al. (2026) with the water-supply sandbox the paper's runoff term inspired. Rain in, evapotranspiration out, runoff as the residual on one side; supply and demand on the other — every figure says which side of the seam it sits on." },
+  { slug: 'swmm5-swmm6-inp-file-upgrader',         title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader (.inp file edition)',
+    desc: 'Upgrades SWMM5 .inp files with SWMM6 EXTRAN features, working directly on the input file. The file-level counterpart to the options upgrader.' },
+  { slug: 'moa-swmm-agent-society',                title: 'SWMM5 Agent Society: Mixture of Models Lab',
+    desc: 'A mixture-of-agents lab where a society of AI models collaborates on SWMM5 modeling tasks. Explores what a committee of models can do that one model cannot.' },
+  { slug: 'copulas-for-swmm',                      title: 'Copulas for SWMM — When Hazards Arrive Together',
+    desc: 'An explainer on copulas for SWMM — modeling the joint behavior of hazards such as rainfall, tide, and inflow extremes when they arrive together. Shows how dependence between drivers changes design-storm thinking.' },
+  { slug: 'open-swmm-finite-volume-swmm6',         title: 'How OpenSWMM Solves Finite Volume — SWMM6 edition',
+    desc: 'Reads how OpenSWMM solves finite volume straight off the develop branch, SWMM6 edition. A sister explainer to the original finite-volume reader.' },
+  { slug: 'modmods-explained',                     title: 'modpods, for a SWMM person',
+    desc: 'Explains modpods in terms a SWMM modeler already knows. A translation guide rather than a specification.' },
+  { slug: 'automatic-rainfall-runoff-models',      title: 'Automatic Rainfall-Runoff Models — Evidence Atlas',
+    desc: 'An evidence atlas of automatic rainfall-runoff models. Catalogs the approaches and the evidence behind each.' },
+  { slug: 'swmm6-anugua-2d',                       title: 'Where the Water Crosses — the PipeDream/ANUGA coupling, read for SWMM6',
+    desc: 'Reads the PipeDream/ANUGA coupling for SWMM6 — where the water crosses between 1D pipes and 2D overland flow. An explainer of the coupling mechanism for modelers.' },
+  { slug: 'autodesk-drainage-decider-english',     title: 'Which Autodesk Drainage Tool? — InfoDrainage vs Civil 3D vs SSA',
+    desc: "Helps you choose between Autodesk's drainage tools — InfoDrainage vs Civil 3D vs SSA. Answers which tool fits which drainage task." },
+  { slug: 'vonnegut-grades-me',                    title: 'The Vonnegut Pass — seven rules over your non-fiction',
+    desc: "Runs Kurt Vonnegut's seven rules for writing well over your non-fiction. A writing-critique pass in the master's spirit." },
+  { slug: 'its-intensity-not-inches-elango',       title: "It's the Intensity, Not the Inches — an interactive companion",
+    desc: "An interactive companion to the argument that it's the intensity, not the inches, that matters. Elango edition." },
+  { slug: 'swmmbench-factorial-jaa',               title: 'swmmbench — Factorial & Hardening Console',
+    desc: 'A factorial and hardening console for SWMM benchmarking. Runs structured experiment grids and stress-tests engine robustness.' },
+  { slug: 'inside-swmm6-gui',                      title: 'Inside the SWMM 6 GUI — openswmm.gui @ swmm6_gui',
+    desc: 'A look inside the SWMM 6 GUI — openswmm.gui at swmm6_gui. Reads the interface straight from the source.' },
+  { slug: 'openswmm-finite-volume',                title: 'How OpenSWMM Solves Finite Volume — read off the develop branch',
+    desc: 'Reads how OpenSWMM solves finite volume off the develop branch. The numerics of the solver, explained from the source.' },
+  { slug: 'how-to-add-swmm6-options-to-swmm5-inp', title: 'SWMM5 → SWMM6 EXTRAN Features Upgrader',
+    desc: 'Shows how to add SWMM6 EXTRAN options to a SWMM5 .inp file. An option-level upgrader with the settings explained.' },
+  { slug: 'flood-audit-3d-flood-modeling',         title: 'Flood Pipeline Audit Bench — Muhammad7006/3D-flood-modeling',
+    desc: 'An audit bench for the Muhammad7006/3D-flood-modeling flood pipeline. Checks the modeling chain step by step.' },
+  { slug: 'swmm-gap-analysis',                     title: 'SWMM Gap Analysis — Rebuilt from First Principles (2026→2030 Horizon)',
+    desc: 'A SWMM gap analysis rebuilt from first principles on a 2026→2030 horizon. Maps where SWMM stands and where it needs to go.' },
+  { slug: 'icm-swmm-inference',                    title: 'ICM SWMM Inference — Export & Analyse',
+    desc: 'Exports and analyzes ICM SWMM inference results. A companion for inference-driven modeling workflows.' },
+  { slug: 'ifd-prompt-library',                    title: '250 Prompts for the InfoDrainage Assistant',
+    desc: 'A library of 250 prompts for the InfoDrainage assistant. Copy-ready and organized for daily modeling work.' },
+  { slug: 'iddx-swmm5-converter',                  title: 'InfoDrainage IDDX Explorer v2',
+    desc: 'Explores InfoDrainage IDDX files and converts them toward SWMM5. Version 2 of the IDDX explorer.' },
+  { slug: 'hydra-explorer-swmm-epanet',            title: 'Hydra Explorer — a Rust rewrite of EPANET and SWMM, read from the source',
+    desc: "Reads Hydra — a Rust rewrite of EPANET and SWMM — straight from the source. An explorer for the Rust engine's architecture." },
+  { slug: 'swmm-jumps-ai-jumps',                   title: 'The Jump Map — Jumps, Ladders, and a Human–AI Division of Labor for SWMM5, SWMM5+ & SWMM6',
+    desc: 'The jump map — jumps, ladders, and a human–AI division of labor for SWMM5, SWMM5+, and SWMM6. Charts which modeling steps humans keep and which AI takes.' },
+  { slug: 'swmm5-swmm6-code-diff',                 title: 'SWMM5 ⇄ SWMM6 Source Diff Explorer',
+    desc: 'A browser tool for diffing SWMM5 against SWMM6 source code. Renders side-by-side code differences directly in-page.' },
+  { slug: 'stochastic-hydrology-studio',           title: 'Stochastic Hydrology Studio',
+    desc: 'A studio for stochastic hydrology experiments. Generates and analyzes synthetic hydrologic series.' },
+  { slug: 'swmm5-swmm6-solver-anotomy',            title: 'SWMM5 Solver Anatomy — the dynamic-wave step, made visible',
+    desc: "Makes the SWMM5 dynamic-wave step visible, beat by beat. An anatomy of the solver's inner loop." },
+  { slug: 'swmm5-swmm6-svs',                       title: 'SWMM5 .OUT Singular-Value Spectrum',
+    desc: 'An in-browser SVD analyzer for EPA SWMM binary results (A = UΣVᵗ), reading flow, depth/head, and runoff matrices. Reveals how many independent temporal-spatial patterns a file contains, with exact and randomized top-k methods and rank-k compression readouts.' },
+  { slug: 'five-ai-layers-swmm',                   title: 'SWMM AI Engineering Roadmap',
+    desc: 'A five-layer AI engineering roadmap for SWMM. Sequences how AI capabilities stack onto the engine.' },
+  { slug: 'swmm-refinement-manifold',              title: 'SWMM Refinement Manifold — SWMM5 ↔ SWMM6 Benchmark Explorer',
+    desc: 'An interactive SWMM5↔SWMM6 convergence explorer driven by a six-axis refinement policy — Δt, Courant factor, lengthening tolerance, head/flow tolerances, and minimum surface area. Watch the composite error field, gradient, and Hessian coupling matrix respond live, with an explicit list of where the separability assumption breaks.' },
+  { slug: 'four-engine-comparison',                title: 'Four-Engine Pipe Comparator — HEC-RAS Pipes · InfoWorks ICM · SWMM5 · SWMM6',
+    desc: 'A solver-numerics lab, feature matrix, and terminology rosetta comparing HEC-RAS Pipes, InfoWorks ICM, SWMM5, and SWMM6. Ships shared benchmark systems and a hydrograph-comparison tool.' },
+  { slug: 'swmm-enablement-gists',                 title: 'Gist Shelf — SWMM5 & SWMM6 Enablement',
+    desc: 'A curated shelf of SWMM5 and SWMM6 enablement gists. The companion catalog to Gist Lab.' },
+  { slug: 'one-water-backbone-sewntr',             title: 'One Backbone — SWMM, EPANET and WNTR on a shared SQL layer',
+    desc: "An explorable test of Raza Ali's proposal to run SWMM, EPANET, and WNTR on one shared SQL layer. Lets you query networks across all three engines from a single interface." },
+  { slug: 'swmm5-conduit-lengthening-advisor',     title: 'SWMM5 Lengthening Advisor — What LENGTHENING_STEP Really Does',
+    desc: "An interactive tool explaining what LENGTHENING_STEP really does in SWMM5's dynamic-wave routing, source-validated against EPA SWMM 5.2.4 (link.c). Includes a network advisor, a Pareto trade-off sweep, and an improvement roadmap." },
+  { slug: 'pangea-rainfall-explorer',              title: 'Pangea Rainfall Explorer',
+    desc: "Links the Carnian Pluvial Episode's deep-time volcanic-forcing megamonsoon to the kind of extreme, multi-decadal wet periods that stress modern drainage systems. An interactive model shows how a step change in atmospheric moisture translates to rainfall intensity — a reminder that design-storm assumptions are not stationary." }
 ];
 APPS.forEach(function (a) { a.url = 'https://' + a.slug + '.netlify.app'; });
+
+/* Two-sentence card summaries, keyed by gist ID — cards prefer these over
+   the raw (often very long) GitHub description when an entry exists. */
+var GIST_SUMMARIES = {
+  "ae60e79bcd8171b14808b0af5e422400": "A browser tool for diffing SWMM5 against SWMM6 source code. Renders side-by-side code differences directly in-page.",
+  "614175dd0556648785436f93319d9ef7": "An in-browser SVD analyzer for EPA SWMM binary results (A = UΣVᵗ), reading flow, depth/head, and runoff matrices. Reveals how many independent temporal-spatial patterns a file contains, with exact and randomized top-k methods and rank-k compression readouts.",
+  "ccbdd004c1c667c2e9fbae1167fbb66d": "Runs real SWMM5 and SWMM6 WebAssembly engines side by side to test run isolation, hot-start carryover, and numerical divergence. Prompted by Joaquín Alvarado's LocalSWMM, it surfaces three findings, one reversing conventional advice.",
+  "4d3dd0a80f67ddc62f7feae6ed93e929": "A searchable library of 95 fully-commented InfoWorks ICM and SWMM network SQL scripts across spatial, results, time series, and QA/QC categories. Includes a query-starter skeleton generator, per-script lint status, and a tracked corrections log.",
+  "5b87c14d2d24255c97b7fc4e21feafed": "Fits any closed conduit boundary as a Fourier series in log r(θ), then emits a pasteable SWMM5 [CURVES] Shape block. Validated against SWMM5's own width tables, with a Henderson binary-expansion mode for exploring exotic boundaries.",
+  "8b5c6300120efc1fa2933b5c3ae920e0": "Races plain gradient descent against Nesterov's 1983 accelerated gradient as they calibrate a real EPA SWMM 5.2 dynamic-wave engine in-browser. Spends real engine runs as currency and honors Nesterov's 2026 Gauss Prize.",
+  "2523aee89c24c0bb1c217917bce27e49": "A personal dashboard tracking three long-running documentation and strategy goals against the swmm5.org archive and GitHub catalog. Provides status badges, next actions, and cross-cutting notes.",
+  "8bc28c44b4fecfd1f88fab668c5857b0": "An interactive lab running the real EPA SWMM 5.2.2 WASM engine live as you tweak routing step, lengthening step, trials, and tolerances. Provides continuity feedback, a flow-depth phase portrait, and a parameter sensitivity sweep.",
+  "2c6d54433826ea2a8024784430d8b0ea": "A binary .out comparison tool that pairs elements by name and issues a machine-checked certificate proving two engine runs produced the same physics. Uses tolerance bands, continuity gates, and SHA-256 hashes, styled after a moonshine visualizer.",
+  "f66f32b51c73f4ae6822b2d9ecbf2c51": "A browser parser for XPSWMM's native 80-column fixed-width .xp format inherited from 1981 SWMM Version 3. Extracts nodes, links, and job control with single-file, ZIP, and GitHub-folder batch conversion to EPA SWMM 5 .inp.",
+  "8f3aca942b79555ce65a172909e033b1": "A client-side reader for .icmt files that decodes the reverse-engineered IWTDB002 object-tree format. Replays version-controlled NDJSON commit logs into tables and a map, exporting a runnable SWMM5 .inp verified by an embedded engine.",
+  "be970d28e4b29fd2f24bc40b675d65aa": "An interactive catalog for choosing the smallest SWMM5 model that exposes a specific engine-behavior difference against InfoWorks ICM. Spans six categories with value/effort ranking, a sortable matrix, and a recommended run order.",
+  "92c38c4f24a4b6ab566d4c9e2bc31df3": "Builds a serial conduit chain whose lengths follow a Hilbert curve traversal scaled logarithmically to stress-test the dynamic wave solver. Includes an in-browser WASM SWMM 5.2.2 engine with an adaptive bisection loop and .rpt reader.",
+  "dd8fea8eef6bad6154944dcbd31858e9": "An interactive Kohonen SOM built on a verified rainfall-runoff engine, mapping Monte Carlo calibration equifinality colored by NSE. Offers U-Matrix/hits/component-plane views, a SOM-folding playground, and a verification receipt.",
+  "f19288456d5d1d55eeceae6f2c42832a": "A hands-on companion to EPANET's total-head math, from Elevation + Pressure = Total Head to a Hazen-Williams headloss walk. Culminates in a step-by-step hand solve of the Global Gradient Algorithm on a looped network.",
+  "bf6ec6b96ecedeb60902c86d37256fd3": "An AI fable generator casting weirs, orifices, pumps, and detention ponds as Aesop-style characters. Produces hydraulically-accurate fables at classic lengths in English or Chinese, each with a moral.",
+  "8fc757c9d4d2dfdc89cc736bb79fe656": "A dual-view .inp visualizer pairing a true-coordinate GIS plan view with a novel toroidal \"orbit\" ring layout. Adds critical-path tracing, GitHub repo browsing, and five color-by modes.",
+  "77ebf296f8c65d73b94e4817c43e7c40": "An interactive Saint-Venant explainer showing SWMM5's explicit scheme and ICM's implicit Preissmann-box scheme solve identical equations. Includes finite-volume node demos, a Courant flood-wave animator, and a disagreement-budget calculator.",
+  "a4ca2ab2d53143b2cea157623abff2c5": "A teaching tool demonstrating equifinality in SWMM subcatchment calibration via GLUE and Latin Hypercube sampling. Compares lumped-reservoir vs. kinematic-wave schemes using NSE/KGE behavioral thresholds.",
+  "47729405548fbf00b7775d9d10f6eb39": "Uses chaotic double-pendulum dynamics to draw sewer networks, with each pendulum representing a different model. Makes sensitive dependence physical, showing how a tiny nudge yields a completely different network.",
+  "988907d4b750ca0167d492650f3e8abc": "A recreation of Mathelirium's particle-life simulation where attraction/repulsion rules produce lifelike \"creatures\" with no programmed behavior. Features 14 presets, an evolving-rules mode, and GIF/PNG/JSON export.",
+  "b32c7b225d2c6959253e6f12f241f40e": "An interactive paper explainer for a multi-agent LLM system enabling natural-language control of EPANET simulations. Maps the approach onto SWMM5 and compares it against the first peer-reviewed agentic SWMM workflow.",
+  "479ea7fba865e50c2eb8cda245e59e45": "A browsable, searchable catalog of InfoWorks ICM Ruby scripts grouped by category. Live parameter fields rewrite the source code, with one-click copy, .rb download, CSV export, and a guided tour.",
+  "bf36b0aa4087693f7cef4183761d03e5": "An interactive explainer of Rehman et al. (2024), a GIS bivariate study ranking ten landscape factors for groundwater potential. Includes a live site-scoring builder and ROC validation charts.",
+  "1a4b348a64249509294bc12b5716237a": "A stylized Three.js relief map of the Forest City reclaimed-island development in Malaysia. Features day/night toggle, satellite overlay, photo pinning, and clickable landmarks.",
+  "6f3681e28a86d5f1a4c3c391094a380c": "An interactive reading of Skorobogatov et al. (2026) showing bioretention infiltration rising rather than clogging over four years. Maps findings onto SWMM5 Bio-Retention Cell layers, ICM SuDS controls, and SWMM6 ideas.",
+  "91323a5b0e6a8055a640d1bb1e11305c": "A content engine turning one idea into a swmm5.org article, newsletter, LinkedIn post, and X thread. Includes SEO self-competition warnings and publishing-order guidance across six owned surfaces.",
+  "e087273b625066dca849a37cfcd5fdb7": "An engineering guide contrasting simplified PRV set-point control against physical valve response. Offers a live opening-percentage workbench, an EPANET/InfoWater/WS Pro comparison, and four design-review scenarios.",
+  "0f4a835c7dc5f6a254185b8aa2f0bd67": "An interactive strategy builder applying Jason Roberts' Luck Surface Area concept to eleven channels for supporting EPA SWMM 6. Includes a live radar diagram and a support-probability estimator.",
+  "037243bf42bd6a20b99efc7d1ff6ad26": "Models why parallel fan-out without matching review capacity compounds into technical debt with interest. Adds a durability framework distinguishing what SWMM5/SWMM6 must never change from disposable churn.",
+  "d1286ad4f51528c37504dd4f6022495e": "A browsable catalog of every public ArcGIS REST endpoint the City of Naperville, IL exposes. Provides copy-ready query URLs and dedicated SWMM, InfoWorks ICM, and EPANET import workflows.",
+  "0e3c4353dc4376da0d4893cfadfce32c": "An interactive field guide to Howard T. Odum's Energy Systems Language and its eleven-symbol circuit diagramming. Includes a drag-and-drop diagram builder with SVG/GIF export and AI prompts for new energy maps.",
+  "f3fb45c1c7bb2f84270831e5aa191251": "Compares the legacy triangular RTK approach against Caleb Buahin's proposed exponential, temperature-driven soil-moisture reservoir in SWMM2D. Provides year, single-storm, recovery, and climate-shift simulators.",
+  "45de5555fdd5028b6db49b1388e28b5e": "A step-by-step guide for taking a SewerGEMS network into InfoWorks ICM, first as 1D pipes then coupled to a 2D flood mesh. Includes a live rainfall/flooding demo and an ICM vs. SewerGEMS decision guide.",
+  "65de2b49cf7b20e05de8d62ea41b05dc": "A speculative-but-grounded Mars settlement engineering explorer for the Valles Marineris canyon. Pairs an EPANET-style looped water network (Hardy-Cross solver) and a real SWMM5 nonlinear-reservoir stormwater model with habitat, atmosphere, and cost calculators.",
+  "9f2f53295ee0b3550a035065c0d3f4bf": "A searchable file-tree explorer for the Autodesk Water Infrastructure open-source-support repo — 1,903 files across 455 folders. Covers Ruby, SQL, Python, and VBScript tooling for InfoWorks ICM, ICM SWMM, InfoAsset Manager, ICMLive, WS Pro, InfoWater Pro, and XPSWMM.",
+  "5b9d75c0e16869ca378c84a0ee16e1b0": "A tribute and explainer app for Samer Muhandes, InfoWorks ICM product manager at Autodesk. Covers his four ICM network families and the #DidYouKnowICMcandothat video series.",
+  "e81df83a548a3741808d6b7a3d34b66c": "An interactive D3 visualizer that animates a SWMM5 conveyance network smoothly morphing between geographic, elevation-ordered, and hierarchical graph layouts. Built on a real combined-sewer .inp dataset.",
+  "4103511df30781016c907b5382273768": "An interactive walkthrough of KYPipe's Peak Demand Diversity (PDD) curve method for sizing rural water systems. Includes a live curve calculator, a branch-line sizing example, pasture-meter equivalency math, and an EPANET comparison.",
+  "b7bbd9fff5d7954fccf5bb85d64d1b3d": "A single-file experiment in building and running SWMM5 with no user interface, wired through PySWMM. Strips the engine down to its computational core in one HTML page.",
+  "e714ef575fb97cbb9f0bb6b89655a450": "An interactive recreation of the circa-2000 CHI Toronto conference paper “Merging the Science of SWMM to a Comprehensive Civil Engineering Design Package” (Kuch, Dickinson, Akman, Keskar). Pairs the original text and a Visual Hydro/CAiCE architecture diagram with a 2026 SWMM5 theory update.",
+  "67076315d4858d94268f6a6da3499fc6": "An AI-powered documentation browser for any GitHub repo across the dickinsonre, SWMMBobSWMM6, CIMM-ORG, and SWMMEnablement accounts. Provides a file tree, Mermaid architecture diagrams, and a Claude-powered repo chat.",
+  "3b4e6564b74aa66a5a6b51d718ff435e": "An interactive deconstruction of Tim Medearis's Ruby + AI + Exchange automation pipeline for InfoWorks ICM and WS Pro. Includes a live AI prompt builder, code examples, and a dashboard mockup.",
+  "e234b5f21fcd53d9f49d419fb8ad8bce": "An interactive SWMM5 subcatchment and LID studio that carves watersheds from a Heighway dragon curve via its own recursive fold rule. Runs a real embedded SWMM5 WebAssembly engine with exports to SWMM5 and InfoWorks ICM.",
+  "6f0bbc3ee72a05e7eee962614863b847": "A reference brief on XPSWMM's FEMA national acceptance and the role of the TUFLOW engine, triple-checked against primary sources. Covers the TUFLOW Classic/GPU/HPC lineage, the 2020 Quadtree/SGS inflection point, and the regulatory gap in FEMA's generic “XPSWMM, XPSTORM 10.0 AND UP” listing.",
+  "82e25f1210fed459b669f9f6f5274e2d": "An interactive browser explainer of Anderson Acceleration applied to the SWMM6 dynamic-wave solver, with method credit to Caleb Buahin (EPA ORD / Hazen and Sawyer). Shows convergence animation, iteration-count histograms, and a per-node skip-list evaluator.",
+  "40c6c0c52c0c7240723e18e07e2114ea": "An interactive translation guide mapping Autodesk InfoDrainage's design-first, site-scale workflow onto SWMM5 concepts. Covers auto-design, the SuDS/BMP library, eight hydrology methods, the embedded SWMM5 engine, Civil 3D interop, and a SWMM5-to-IDDX converter.",
+  "9937e7ba673607b47f5492837b34ed7f": "An interactive explainer of Caleb Buahin's proposed depth-2 mixing for the SWMM6 dynamic-wave solver. Shows how wrapping Picard iterations with Anderson Acceleration cuts iterations per timestep 25–50%, plus a per-node skip-list stability evaluator.",
+  "6f6b1118df9f49c81c1451011d9e35b5": "An interactive SWMM5 Horton infiltration model demonstrating how a compacted subsoil layer creates a “bowl-limited” runoff response that dramatically exceeds TR-55 curve-number predictions. Includes live apparent-CN fitting, SWMM .inp generation, and multi-engine verification.",
+  "31826f736810b12f01ac71861719d621": "A searchable grid of 120 SWMM engine algorithms mapped to their governing equations (LaTeX), symbols, solver options, and source files. Spans numerics, hydrology/hydraulics, quality/LID, and control/IO, plus 20 alpha SWMM6/OpenSWMM features.",
+  "9bd36dc44992179db05b0b4f84f9388b": "A Courant–Friedrichs–Lewy stability analyzer for ICM SWMM networks, with .inp file parsing and a live stability map. Compares three discretization methods — Fixed, CFL-based, and AASD — with equations sourced to Roesner et al. (1988) and Pachaly et al. (2019).",
+  "10804cdfddb44f58d93c1e0c6a0ef4e3": "An interactive SWMM5↔SWMM6 convergence explorer driven by a six-axis refinement policy — Δt, Courant factor, lengthening tolerance, head/flow tolerances, and minimum surface area. Watch the composite error field, gradient, and Hessian coupling matrix respond live, with an explicit list of where the separability assumption breaks.",
+  "cd250efdcb80c178278de1924d7ee86e": "A solver-numerics lab, feature matrix, and terminology rosetta comparing HEC-RAS Pipe Networks 7.0, InfoWorks ICM, EPA SWMM5, and the SWMM6 track (SWMM5+/OpenSWMM). Ships five shared benchmark systems and a hydrograph-comparison tool.",
+  "7f71e63d029174a6039d15527a83aa6d": "An explorable test of Raza Ali's proposal to run SWMM, EPANET, and WNTR on one shared SQL layer. Lets you query networks across all three engines from a single interface.",
+  "7f23e206ce8a238e2bd086e08c12a915": "An interactive tool explaining what LENGTHENING_STEP really does in SWMM5's dynamic-wave routing, source-validated against EPA SWMM 5.2.4 (link.c). Includes a network advisor, a Pareto trade-off sweep, and an improvement roadmap.",
+  "59b011dd81e7edf43923def4e61d5457": "Links the Carnian Pluvial Episode's deep-time volcanic-forcing megamonsoon to the kind of extreme, multi-decadal wet periods that stress modern drainage systems. An interactive model shows how a step change in atmospheric moisture translates to rainfall intensity — a reminder that design-storm assumptions are not stationary.",
+  "18e1648d1cb06009707cb468b42593ce": "An interactive teardown of the ArcMap-era InfoSWMM platform — its SWMM5 engine lineage, GIS architecture, and data storage. Includes a legacy recovery workflow.",
+  "f801c5302a7c21b21de9a155c7745436": "A standalone tool that procedurally generates radial “rosette” subcatchment networks for SWMM5 and SWMM6. Includes built-in screenshot and recording export (via embedded html2canvas) for documenting model layouts.",
+  "695c05ed4684ada120f75059fb213e6b": "A lightweight 3D viewer for a SWMM5 storage pond. Lets you rotate and inspect pond geometry right in the browser.",
+  "dbb8be1b30e58d2147adbb470e5e92e6": "A README-based master index of all the author's public gists. Serves as a navigational catalog rather than a runnable tool.",
+  "965d619e303aee892150cd6442036c32": "A comparison test probing emergent behavioral differences between the SWMM5 and SWMM6 engines. Runs both engines on the same inputs and highlights where their responses diverge.",
+  "5657a4b8af03cf76842fd35a08e952ae": "Load a real SWMM5 run and cross-plot flow against depth. The loop that appears is the loop rating curve — the hydraulic analog of a phase-space orbit.",
+  "9619008f7603e534cc663be48810d71e": "A SWMM5 model rover that talks about the output of a SWMM model. An experiment in giving model results a voice.",
+  "2ff8c0e29b4aed084601ee9e4a13fe38": "A viewer for SWMM5 .inp, .rpt, and .out files. Loads inputs, reports, and binary results together for inspection in the browser."
+};
 
 /* ---------- Tiny DOM helper ---------- */
 function $(id) { return document.getElementById(id); }
@@ -967,6 +1082,11 @@ function htmlFiles(gist) {
   return gistFiles(gist).filter(function (f) { return /\.html?$/i.test(f.filename); });
 }
 function isRunnable(gist) { return htmlFiles(gist).length > 0; }
+/* Curated two-sentence summary for a gist card (falls back to the live API description) */
+function gistSummary(g) {
+  return GIST_SUMMARIES[g.id] || (g.description || '').trim();
+}
+
 function gistTitle(gist) {
   var d = (gist.description || '').trim();
   if (d) return d;
@@ -1210,7 +1330,7 @@ function visibleGists() {
       if (!has) return false;
     }
     if (q) {
-      var hay = ((g.description || '') + ' ' + gistFiles(g).map(function (f) { return f.filename; }).join(' ')).toLowerCase();
+      var hay = (gistSummary(g) + ' ' + gistTitle(g) + ' ' + (g.description || '') + ' ' + gistFiles(g).map(function (f) { return f.filename; }).join(' ')).toLowerCase();
       if (hay.indexOf(q) === -1) return false;
     }
     return true;
@@ -1249,6 +1369,13 @@ function renderGrid() {
     meta.appendChild(el('span', null, 'updated ' + relativeTime(g.updated_at)));
     if (isRunnable(g)) meta.appendChild(el('span', 'runnable-tag', '▶ runnable'));
     card.appendChild(meta);
+
+    var descText = gistSummary(g);
+    if (descText) {
+      var descP = el('p', 'card-desc', descText);
+      descP.title = descText;
+      card.appendChild(descP);
+    }
 
     var files = el('div', 'card-files');
     gistFiles(g).forEach(function (f) {
@@ -1319,7 +1446,7 @@ function renderApps() {
   grid.innerHTML = '';
   var q = searchQuery.trim().toLowerCase();
   var list = APPS.filter(function (a) {
-    return !q || (a.title + ' ' + a.slug).toLowerCase().indexOf(q) !== -1;
+    return !q || (a.title + ' ' + a.slug + ' ' + (a.desc || '')).toLowerCase().indexOf(q) !== -1;
   });
   if (appSortMode === 'name') {
     list = list.slice().sort(function (a, b) {
@@ -1348,6 +1475,12 @@ function renderApps() {
     meta.appendChild(el('span', null, 'hosted app'));
     meta.appendChild(el('span', 'runnable-tag', '▶ opens here'));
     card.appendChild(meta);
+
+    if (a.desc) {
+      var appDesc = el('p', 'card-desc', a.desc);
+      appDesc.title = a.desc;
+      card.appendChild(appDesc);
+    }
 
     var files = el('div', 'card-files');
     var chipEl = el('span', 'file-chip');
